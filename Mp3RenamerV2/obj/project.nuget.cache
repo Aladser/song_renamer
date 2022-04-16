@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "UC1tBREMWrPW/+A/Pmoc8TVlECVdnBEqYzbKSsbkgcPQWbcOrsfcxsFSXfg/IDd1NHiEBjJq6iE+jEo11CTvsQ==",
+  "success": true,
+  "projectFilePath": "C:\\Projects\\SongRenamer_2\\Mp3RenamerV2\\SongRenamer_2.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Aladser\\.nuget\\packages\\taglibsharp\\2.2.0\\taglibsharp.2.2.0.nupkg.sha512"
+  ],
+  "logs": []
+}
