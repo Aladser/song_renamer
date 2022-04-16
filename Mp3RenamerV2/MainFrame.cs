@@ -222,10 +222,16 @@ namespace Mp3RenamerV2
                 if (!folderFileElements[i].Equals(newname))
                 {
                     folderFileElements[i] = newname;
-                    print(folderFileElements[i]+"\n");
+                    print(folderFileElements[i] + "\n");
+                }
+                else if(newname == null)
+                {
+                    print(folderFileElements[i]);
                 }
                 else
+                {
                     print("Название соотвествует тегам\n");
+                }
                 bw.ReportProgress((i+1) * 100 / folderFileElements.Length);
             }
             e.Cancel = true;
@@ -266,6 +272,11 @@ namespace Mp3RenamerV2
                  {
                     print(exc.Message);
                  }
+                catch(System.IO.IOException)
+                {
+                    print("Файл занят другим процессом");
+                    return null;
+                }
                   filename = newname;
             }
             newname = deleteRedudantSymbols(filename);
