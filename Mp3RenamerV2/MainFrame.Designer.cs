@@ -44,6 +44,7 @@
             this.очиститьПолеToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.checkLabel = new System.Windows.Forms.Label();
             this.progressLabel = new System.Windows.Forms.Label();
+            this.проверкаToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -81,7 +82,8 @@
             this.openMenuItem,
             this.checkTagsMenuItem,
             this.checkNameMenuItem,
-            this.очиститьПолеToolStripMenuItem});
+            this.очиститьПолеToolStripMenuItem,
+            this.проверкаToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(1108, 24);
@@ -100,14 +102,14 @@
             // openFileMenuItem
             // 
             this.openFileMenuItem.Name = "openFileMenuItem";
-            this.openFileMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.openFileMenuItem.Size = new System.Drawing.Size(106, 22);
             this.openFileMenuItem.Text = "файл";
             this.openFileMenuItem.Click += new System.EventHandler(this.openFileMenuItem_Click);
             // 
             // openFolderMenuItem
             // 
             this.openFolderMenuItem.Name = "openFolderMenuItem";
-            this.openFolderMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.openFolderMenuItem.Size = new System.Drawing.Size(106, 22);
             this.openFolderMenuItem.Text = "папку";
             this.openFolderMenuItem.Click += new System.EventHandler(this.openFolderMenuItem_Click);
             // 
@@ -202,5 +204,6 @@
         private Label checkLabel;
         private ToolStripMenuItem очиститьПолеToolStripMenuItem;
         private Label progressLabel;
+        private ToolStripMenuItem проверкаToolStripMenuItem;
     }
 }

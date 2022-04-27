@@ -8,6 +8,7 @@ namespace Mp3RenamerV2
 {
     public partial class MainFrame : Form
     {
+        String text = "";
         /// <summary>
         /// Путь открытому файлу или папке
         /// </summary>
@@ -37,6 +38,7 @@ namespace Mp3RenamerV2
         {
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
+                int pos1,pos2;
                 checkLabel.Text = "";
                 checkTagsMenuItem.Enabled = true;
                 checkNameMenuItem.Enabled = true;
@@ -69,32 +71,39 @@ namespace Mp3RenamerV2
             bw.WorkerReportsProgress = true;
             bw.ProgressChanged += progressChangedBW;
             bw.RunWorkerCompleted += runCompletedBW;
-            bw.DoWork += openFolder;
+            bw.DoWork += openFolderBW;
             bw.RunWorkerAsync();
+            
         }
-        // Открыть папку
-        private void openFolder(object sender, DoWorkEventArgs e)
+        // Открыть папку. Считывает все названия папок и файлов в text
+        private void openFolderBW(object sender, DoWorkEventArgs e)
         {
+            text = "";
             String[] folderFileElements = Directory.GetFileSystemEntries(selectedPath);// элементы папки
-            int progLength = 2*folderFileElements.Length;
-            int prog = 0;
-            // показ папок
+            int progressLength = 2*folderFileElements.Length;
+            int progress = 0;
+            // Считывает подпапки из папки
             foreach (String elem in folderFileElements)
             {
-                if (Path.GetExtension(elem) == "") print(elem+"\n");
-                bw.ReportProgress(++prog * 100/ progLength);
+                if (Path.GetExtension(elem) == "") text += elem+"\n";
+                bw.ReportProgress(++progress * 100/ progressLength);
+                
             }
-            // показ мp3 файлов
+            // Считывает музыкальные файлы
             string ext;
+            int pos1=0, pos2=0;
             foreach (String elem in folderFileElements)
             {
                 ext = Path.GetExtension(elem);
                 if (ext==".mp3" || ext==".flac")
                 {
-                    print(elem + "\n");
-                    print("----- " + showTags(elem));
+                    text += elem + "\n";
+                    pos1 = text.Length;
+                    text += "----- " + showTags(elem);
+                    pos2 = text.Length;
+                    words.Add(new PaintedWord(pos1, pos2));
                 }
-                bw.ReportProgress(++prog * 100 / progLength);
+                bw.ReportProgress(++progress * 100 / progressLength);
             }
             // Путь корневой папки
             String[] foldersInPath = selectedPath.Split("\\"); // число папок в пути
@@ -104,7 +113,7 @@ namespace Mp3RenamerV2
             updateStartPath(selectedPath.Substring(0, rootFolderPathLength));
             e.Cancel = true;
         }
-        // Событие проверки тегов
+       // Событие проверки тегов
         private void checkTagsMenuItem_Click(object sender, EventArgs e)
         {
             // файла
@@ -113,6 +122,7 @@ namespace Mp3RenamerV2
                 checkLabel.Text = "";
                 selectedPath = deleteRedudantSymbols(selectedPath);
                 checkTags(selectedPath);
+                infoField.Text += text;
             }
             // папка
             else
@@ -163,8 +173,10 @@ namespace Mp3RenamerV2
                 tags.Save();
             }
             String str2 = showTags(file);
-            if (!str1.Equals(str2)) print(str2);
-            else print("Правильные теги\n");
+            if (!str1.Equals(str2))
+                text += str2;
+            else
+                text += "Правильные теги\n";
             return true;
         }
         // Событие Проверка имени файла
@@ -212,6 +224,7 @@ namespace Mp3RenamerV2
         // Фоновая задача проверки имени файла
         private void checkFileNameBW(object sender, DoWorkEventArgs e)
         {
+            text = "";
             String[] folderFileElements = Directory.GetFileSystemEntries(selectedPath);
             string newname, ext;
             for (int i = 0; i < folderFileElements.Length; i++)
@@ -222,15 +235,15 @@ namespace Mp3RenamerV2
                 if (!folderFileElements[i].Equals(newname))
                 {
                     folderFileElements[i] = newname;
-                    print(folderFileElements[i] + "\n");
+                    text += folderFileElements[i] + "\n";
                 }
                 else if(newname == null)
                 {
-                    print(folderFileElements[i]);
+                    text += folderFileElements[i];
                 }
                 else
                 {
-                    print("Название соотвествует тегам\n");
+                    text += "Название соотвествует тегам\n";
                 }
                 bw.ReportProgress((i+1) * 100 / folderFileElements.Length);
             }
@@ -292,7 +305,8 @@ namespace Mp3RenamerV2
         /// </summary>
         private void progressChangedBW(object sender, ProgressChangedEventArgs e)
         {
-           progressLabel.Text = (e.ProgressPercentage.ToString() + "%");
+            progressLabel.Text = (e.ProgressPercentage.ToString() + "%");
+            
         }
         /// <summary>
         /// Событие завершения фоновой задачи
@@ -301,6 +315,7 @@ namespace Mp3RenamerV2
         {
             if (e.Cancelled == true)
             {
+                infoField.Text += text;
                 checkLabel.Text = "Готово";
             }
         }
@@ -366,5 +381,19 @@ namespace Mp3RenamerV2
         {
             infoField.Text = "";
         }
+
+        // позиция закрашиваемого слова
+        struct PaintedWord
+        {
+            public PaintedWord(int p1, int p2)
+            {
+                start = p1;
+                end = p2;
+            }
+            public int start;
+            public int end;
+        }
+        // КОллекция закрашенных слов
+        private List<PaintedWord> words = new List<PaintedWord>();
     }
 }
