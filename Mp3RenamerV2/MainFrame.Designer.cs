@@ -42,9 +42,9 @@
             this.checkFileNameMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.checkAlbFileNameMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.очиститьПолеToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.проверкаToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.checkLabel = new System.Windows.Forms.Label();
             this.progressLabel = new System.Windows.Forms.Label();
-            this.проверкаToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -153,6 +153,11 @@
             this.очиститьПолеToolStripMenuItem.Text = "Очистить поле";
             this.очиститьПолеToolStripMenuItem.Click += new System.EventHandler(this.clearInfoField_Click);
             // 
+            // проверкаToolStripMenuItem
+            // 
+            this.проверкаToolStripMenuItem.Name = "проверкаToolStripMenuItem";
+            this.проверкаToolStripMenuItem.Size = new System.Drawing.Size(12, 20);
+            // 
             // checkLabel
             // 
             this.checkLabel.Location = new System.Drawing.Point(12, 24);
@@ -179,7 +184,7 @@
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainFrame";
-            this.Text = "SongRenamer 2.01";
+            this.Text = "SongRenamer 2.02";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
