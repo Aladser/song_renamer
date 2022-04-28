@@ -184,7 +184,7 @@
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainFrame";
-            this.Text = "SongRenamer 2.02";
+            this.Text = "SongRenamer 2.04";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
@@ -196,7 +196,6 @@
         private RichTextBox infoField;
         private ToolStripMenuItem openFileMS;
         private ToolStripMenuItem openFolderMS;
-        private ToolStripMenuItem checkFileNameMS;
         private MenuStrip menuStrip1;
         private ToolStripMenuItem openMenuItem;
         private ToolStripMenuItem openFileMenuItem;

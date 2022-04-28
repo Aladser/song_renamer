@@ -8,7 +8,12 @@ namespace Mp3RenamerV2
 {
     public partial class MainFrame : Form
     {
-        String text = "";
+        String text = ""; // буфер
+        int start = 0, length = 0; // Начало и длина крашеного слова
+        /// <summary>
+        /// Список закрашенных слов
+        /// </summary>
+        List<PainterWord> words = new List<PainterWord>();
         /// <summary>
         /// Путь открытому файлу или папке
         /// </summary>
@@ -38,17 +43,21 @@ namespace Mp3RenamerV2
         {
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                int pos1,pos2;
                 checkLabel.Text = "";
                 checkTagsMenuItem.Enabled = true;
                 checkNameMenuItem.Enabled = true;
+
                 if (!isFirstString) isFirstString = true;
                 else print("\n");
 
                 isSelectedFile = true;
                 selectedPath = openFileDialog.FileName;
                 print(selectedPath + "\n");
-                print("----- " + showTags(selectedPath));
+                start = infoField.TextLength;
+                print(showTags(selectedPath));
+                length = infoField.TextLength - start;
+                words.Add(new PainterWord(start, length));
+                paintWords();
                 updateStartPath(selectedPath.Substring(0, selectedPath.Length - openFileDialog.SafeFileName.Length));   
             }
         }
@@ -64,8 +73,8 @@ namespace Mp3RenamerV2
 
             isSelectedFile = false;
             selectedPath = openFolderDialog.SelectedPath;
-            print("Папка: " + selectedPath + "\n");
-
+            print("    Папка: " + selectedPath + "\n");
+           
             bw = new BackgroundWorker();
             bw.WorkerSupportsCancellation = true;
             bw.WorkerReportsProgress = true;
@@ -91,17 +100,17 @@ namespace Mp3RenamerV2
             }
             // Считывает музыкальные файлы
             string ext;
-            int pos1=0, pos2=0;
             foreach (String elem in folderFileElements)
             {
                 ext = Path.GetExtension(elem);
                 if (ext==".mp3" || ext==".flac")
                 {
+
                     text += elem + "\n";
-                    pos1 = text.Length;
-                    text += "----- " + showTags(elem);
-                    pos2 = text.Length;
-                    words.Add(new PaintedWord(pos1, pos2));
+                    infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки <Артис>-<Название>
+                    text += showTags(elem);
+                    infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>
+                    words.Add(new PainterWord(start, length));
                 }
                 bw.ReportProgress(++progress * 100 / progressLength);
             }
@@ -116,6 +125,7 @@ namespace Mp3RenamerV2
        // Событие проверки тегов
         private void checkTagsMenuItem_Click(object sender, EventArgs e)
         {
+            text = "";
             // файла
             if (isSelectedFile)
             {
@@ -192,6 +202,7 @@ namespace Mp3RenamerV2
         // Проверяет и изменяет имя файла на соответствие тегам
         private string checkFileName_Click(string filename, bool isAlbum)
         {
+            text = "";
             if (isSelectedFile)
             {
                 string newname = checkFileName(filename, isAlbum);
@@ -283,11 +294,11 @@ namespace Mp3RenamerV2
                  }
                  catch (System.IO.DirectoryNotFoundException exc)
                  {
-                    print(exc.Message);
+                    print("Не могу создать название файла " + newname + "\n");
                  }
                 catch(System.IO.IOException)
                 {
-                    print("Файл занят другим процессом");
+                    print("Файл занят другим процессом " + newname + "\n");
                     return null;
                 }
                   filename = newname;
@@ -316,6 +327,7 @@ namespace Mp3RenamerV2
             if (e.Cancelled == true)
             {
                 infoField.Text += text;
+                paintWords();
                 checkLabel.Text = "Готово";
             }
         }
@@ -380,20 +392,32 @@ namespace Mp3RenamerV2
         private void clearInfoField_Click(object sender, EventArgs e)
         {
             infoField.Text = "";
+            words = new List<PainterWord>();
+
+        }
+        ///
+        /// Класс Закрашенные слова
+        /// 
+        private struct PainterWord {
+            public int start;
+            public int length;
+            public PainterWord(int start, int length)
+            {
+                this.start = start;
+                this.length = length;
+            }
+        }
+        private void paintWords()
+        {
+            for (int i = 0; i < words.Count; i++)
+            {
+                infoField.SelectionStart = words[i].start;
+                infoField.SelectionLength = words[i].length;
+                infoField.SelectionColor = Color.Blue;
+            }
+            infoField.SelectionStart = infoField.TextLength;
+            infoField.SelectionLength = 0;
         }
 
-        // позиция закрашиваемого слова
-        struct PaintedWord
-        {
-            public PaintedWord(int p1, int p2)
-            {
-                start = p1;
-                end = p2;
-            }
-            public int start;
-            public int end;
-        }
-        // КОллекция закрашенных слов
-        private List<PaintedWord> words = new List<PaintedWord>();
     }
 }
