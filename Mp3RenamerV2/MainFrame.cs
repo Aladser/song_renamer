@@ -54,9 +54,13 @@ namespace Mp3RenamerV2
                 selectedPath = openFileDialog.FileName;
                 print(selectedPath + "\n");
                 start = infoField.TextLength;
-                print(showTags(selectedPath));
+                String str = showTags(selectedPath);
+                print(str);
                 length = infoField.TextLength - start;
-                words.Add(new PainterWord(start, length));
+                if(str.Contains("Пусто"))
+                    words.Add(new PainterWord(start, length, true));
+                else
+                    words.Add(new PainterWord(start, length, false));
                 paintWords();
                 updateStartPath(selectedPath.Substring(0, selectedPath.Length - openFileDialog.SafeFileName.Length));   
             }
@@ -99,7 +103,7 @@ namespace Mp3RenamerV2
                 
             }
             // Считывает музыкальные файлы
-            string ext;
+            string ext, str;
             foreach (String elem in folderFileElements)
             {
                 ext = Path.GetExtension(elem);
@@ -108,9 +112,13 @@ namespace Mp3RenamerV2
 
                     text += elem + "\n";
                     infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки <Артис>-<Название>
-                    text += showTags(elem);
-                    infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>
-                    words.Add(new PainterWord(start, length));
+                    str = showTags(elem);
+                    text += str;
+                    infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>                    
+                    if (str.Contains("Пусто"))
+                        words.Add(new PainterWord(start, length, true));
+                    else
+                        words.Add(new PainterWord(start, length, false));
                 }
                 bw.ReportProgress(++progress * 100 / progressLength);
             }
@@ -401,10 +409,12 @@ namespace Mp3RenamerV2
         private struct PainterWord {
             public int start;
             public int length;
-            public PainterWord(int start, int length)
+            public bool isEmpty;
+            public PainterWord(int start, int length, bool isEmpty)
             {
                 this.start = start;
                 this.length = length;
+                this.isEmpty = isEmpty;
             }
         }
         private void paintWords()
@@ -413,7 +423,7 @@ namespace Mp3RenamerV2
             {
                 infoField.SelectionStart = words[i].start;
                 infoField.SelectionLength = words[i].length;
-                infoField.SelectionColor = Color.Blue;
+                infoField.SelectionColor = words[i].isEmpty ? Color.Red : Color.Blue;
             }
             infoField.SelectionStart = infoField.TextLength;
             infoField.SelectionLength = 0;
