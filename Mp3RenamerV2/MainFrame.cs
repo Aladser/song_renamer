@@ -141,6 +141,7 @@ namespace Mp3RenamerV2
                 selectedPath = deleteRedudantSymbols(selectedPath);
                 checkTags(selectedPath);
                 infoField.Text += text;
+                paintWords();
             }
             // папка
             else
@@ -222,6 +223,7 @@ namespace Mp3RenamerV2
                 }
                 else
                     print("Название соотвествует тегам\n");
+                paintWords();
             }
             else
             {
