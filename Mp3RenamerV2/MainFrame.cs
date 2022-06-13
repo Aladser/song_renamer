@@ -22,7 +22,6 @@ namespace Mp3RenamerV2
         /// Флаг открытого файла или папки
         /// </summary>
         private bool isSelectedFile = true; // Флаг выбора файла или папки
-        private bool isFirstString = false; // Флаг напечатанной первой строки
         private OpenFileDialog openFileDialog;
         private FolderBrowserDialog openFolderDialog;
         private String startPath = "";
@@ -47,9 +46,6 @@ namespace Mp3RenamerV2
                 checkTagsMenuItem.Enabled = true;
                 checkNameMenuItem.Enabled = true;
 
-                if (!isFirstString) isFirstString = true;
-                else print("\n");
-
                 isSelectedFile = true;
                 selectedPath = openFileDialog.FileName;
                 print(selectedPath + "\n");
@@ -58,9 +54,10 @@ namespace Mp3RenamerV2
                 print(str);
                 length = infoField.TextLength - start;
                 if(str.Contains("Пусто"))
-                    words.Add(new PainterWord(start, length, true));
+                    words.Add(new PainterWord(start, length, 0));
                 else
-                    words.Add(new PainterWord(start, length, false));
+                    words.Add(new PainterWord(start, length, 1));
+                infoField.Text += "\n";
                 paintWords();
                 updateStartPath(selectedPath.Substring(0, selectedPath.Length - openFileDialog.SafeFileName.Length));   
             }
@@ -72,12 +69,10 @@ namespace Mp3RenamerV2
             checkStatusLabel.Text = "Выполнение";
             checkTagsMenuItem.Enabled = true;
             checkNameMenuItem.Enabled = true;
-            if (!isFirstString) isFirstString = true;
-            else print("\n");
 
             isSelectedFile = false;
             selectedPath = openFolderDialog.SelectedPath;
-            print("    Папка: " + selectedPath + "\n");
+            print("    Открыта папка: " + selectedPath + "\n");
            
             bw = new BackgroundWorker();
             bw.WorkerSupportsCancellation = true;
@@ -109,16 +104,15 @@ namespace Mp3RenamerV2
                 ext = Path.GetExtension(elem);
                 if (ext==".mp3" || ext==".flac")
                 {
-
                     text += elem + "\n";
                     infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки <Артис>-<Название>
-                    str = showTags(elem);
+                    str = showTags(elem) + "\n";
                     text += str;
                     infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>                    
                     if (str.Contains("Пусто"))
-                        words.Add(new PainterWord(start, length, true));
+                        words.Add(new PainterWord(start, length, 0));
                     else
-                        words.Add(new PainterWord(start, length, false));
+                        words.Add(new PainterWord(start, length, 1));
                 }
                 bw.ReportProgress(++progress * 100 / progressLength);
             }
@@ -146,6 +140,7 @@ namespace Mp3RenamerV2
             // папка
             else
             {
+                infoField.Text += "    Проверка тегов файлов\n";
                 checkStatusLabel.Text = "Выполнение";
                 bw = new BackgroundWorker();
                 bw.WorkerSupportsCancellation = true;
@@ -195,7 +190,12 @@ namespace Mp3RenamerV2
             if (!NameOFTags1.Equals(NameOFTags2))
                 text += NameOFTags2;
             else
-                text += "Правильные теги\n";
+                text += NameOFTags1 + ": ";
+
+            infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки <Артис>-<Название>
+            text += "правильные теги\n";
+            infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>                    
+            words.Add(new PainterWord(start, length, 2));
             return true;
         }
         // Событие Проверка имени файла
@@ -222,11 +222,18 @@ namespace Mp3RenamerV2
                     print(filename + "\n");
                 }
                 else
-                    print("Название соотвествует тегам\n");
+                {
+                    print(filename + ": ");
+                    start = infoField.TextLength + text.Length;
+                    print("название файла соотвествует тегам\n");
+                    length = infoField.TextLength + text.Length - start;
+                    words.Add(new PainterWord(start, length, 2));
+                }
                 paintWords();
             }
             else
             {
+                infoField.Text += "    Проверка соответствия имен файлов тегам\n";
                 checkStatusLabel.Text = "Выполнение";
 
                 bw = new BackgroundWorker();
@@ -264,7 +271,11 @@ namespace Mp3RenamerV2
                 }
                 else
                 {
-                    text += "Название соотвествует тегам\n";
+                    text += folderFileElements[i] + ": ";
+                    infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки <Артис>-<Название>
+                    text += "название соотвествует тегам\n";
+                    infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>                    
+                    words.Add(new PainterWord(start, length, 2));
                 }
                 bw.ReportProgress((i+1) * 100 / folderFileElements.Length);
             }
@@ -352,7 +363,7 @@ namespace Mp3RenamerV2
             rslt += tagSong.Tag.FirstPerformer == null ? "Пусто" : tagSong.Tag.FirstPerformer;
             rslt += "} - {";
             rslt += tagSong.Tag.Title == null ? "Пусто" : tagSong.Tag.Title;
-            rslt += "}\n";
+            rslt += "}";
             return rslt;
         }
         /// <summary>
@@ -411,22 +422,35 @@ namespace Mp3RenamerV2
         private struct PainterWord {
             public int start;
             public int length;
-            public bool isEmpty;
-            public PainterWord(int start, int length, bool isEmpty)
+            public int type;
+            public PainterWord(int start, int length, int type)
             {
                 this.start = start;
                 this.length = length;
-                this.isEmpty = isEmpty;
+                this.type = type;
             }
         }
+
         private void paintWords()
         {
             for (int i = 0; i < words.Count; i++)
             {
                 infoField.SelectionStart = words[i].start;
                 infoField.SelectionLength = words[i].length;
-                infoField.SelectionColor = words[i].isEmpty ? Color.Red : Color.Blue;
+                switch (words[i].type)
+                {
+                    case 0:
+                        infoField.SelectionColor = Color.Red;
+                        break;
+                    case 1:
+                        infoField.SelectionColor = Color.Blue;
+                        break;
+                    default:
+                        infoField.SelectionColor= Color.Green;
+                        break;
+                }
             }
+            // Заканчивает окрашивание слов
             infoField.SelectionStart = infoField.TextLength;
             infoField.SelectionLength = 0;
         }
