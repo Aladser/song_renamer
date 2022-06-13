@@ -43,7 +43,7 @@
             this.checkAlbFileNameMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.очиститьПолеToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.проверкаToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.checkLabel = new System.Windows.Forms.Label();
+            this.checkStatusLabel = new System.Windows.Forms.Label();
             this.progressLabel = new System.Windows.Forms.Label();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -158,13 +158,13 @@
             this.проверкаToolStripMenuItem.Name = "проверкаToolStripMenuItem";
             this.проверкаToolStripMenuItem.Size = new System.Drawing.Size(12, 20);
             // 
-            // checkLabel
+            // checkStatusLabel
             // 
-            this.checkLabel.Location = new System.Drawing.Point(12, 24);
-            this.checkLabel.Name = "checkLabel";
-            this.checkLabel.Size = new System.Drawing.Size(100, 23);
-            this.checkLabel.TabIndex = 5;
-            this.checkLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.checkStatusLabel.Location = new System.Drawing.Point(12, 24);
+            this.checkStatusLabel.Name = "checkStatusLabel";
+            this.checkStatusLabel.Size = new System.Drawing.Size(100, 23);
+            this.checkStatusLabel.TabIndex = 5;
+            this.checkStatusLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // progressLabel
             // 
@@ -179,7 +179,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.ClientSize = new System.Drawing.Size(1108, 546);
             this.Controls.Add(this.progressLabel);
-            this.Controls.Add(this.checkLabel);
+            this.Controls.Add(this.checkStatusLabel);
             this.Controls.Add(this.infoField);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -205,7 +205,7 @@
         private ToolStripMenuItem checkNameMenuItem;
         private ToolStripMenuItem checkFileNameMenuItem;
         private ToolStripMenuItem checkAlbFileNameMenuItem;
-        private Label checkLabel;
+        private Label checkStatusLabel;
         private ToolStripMenuItem очиститьПолеToolStripMenuItem;
         private Label progressLabel;
         private ToolStripMenuItem проверкаToolStripMenuItem;

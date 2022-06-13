@@ -43,7 +43,7 @@ namespace Mp3RenamerV2
         {
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
-                checkLabel.Text = "";
+                checkStatusLabel.Text = "";
                 checkTagsMenuItem.Enabled = true;
                 checkNameMenuItem.Enabled = true;
 
@@ -69,7 +69,7 @@ namespace Mp3RenamerV2
         private void openFolderMenuItem_Click(object sender, EventArgs e)
         {
             if (openFolderDialog.ShowDialog() != DialogResult.OK) return;
-            checkLabel.Text = "Выполнение";
+            checkStatusLabel.Text = "Выполнение";
             checkTagsMenuItem.Enabled = true;
             checkNameMenuItem.Enabled = true;
             if (!isFirstString) isFirstString = true;
@@ -137,7 +137,7 @@ namespace Mp3RenamerV2
             // файла
             if (isSelectedFile)
             {
-                checkLabel.Text = "";
+                checkStatusLabel.Text = "";
                 selectedPath = deleteRedudantSymbols(selectedPath);
                 checkTags(selectedPath);
                 infoField.Text += text;
@@ -146,7 +146,7 @@ namespace Mp3RenamerV2
             // папка
             else
             {
-                checkLabel.Text = "Выполнение";
+                checkStatusLabel.Text = "Выполнение";
                 bw = new BackgroundWorker();
                 bw.WorkerSupportsCancellation = true;
                 bw.WorkerReportsProgress = true;
@@ -174,12 +174,12 @@ namespace Mp3RenamerV2
         {
             string ext = Path.GetExtension(file);
             if (ext != ".mp3" && ext != ".flac") return false;
-            String str1 = showTags(file);
+            String NameOFTags1 = showTags(file);
             TagLib.File tags = TagLib.File.Create(file);
             // Проверяет название песни
             if (tags.Tag.Title == null)
             {
-                int arg1 = file.IndexOf("-") + 2; // начало выреза
+                int arg1 = file.LastIndexOf("-") + 2; // начало выреза
                 int arg2 = file.Length - arg1 - 4; // число символов для выреза
                 tags.Tag.Title = file.Substring(arg1, arg2); ;
                 tags.Save();
@@ -188,12 +188,12 @@ namespace Mp3RenamerV2
             if (tags.Tag.FirstPerformer == null)
             {
                 String fileName = Path.GetFileName(file);
-                tags.Tag.Performers = new String[1] { fileName.Substring(0, fileName.IndexOf("-") - 1) };
+                tags.Tag.Performers = new String[1] { fileName.Substring(0, fileName.LastIndexOf("-") - 1) };
                 tags.Save();
             }
-            String str2 = showTags(file);
-            if (!str1.Equals(str2))
-                text += str2;
+            String NameOFTags2 = showTags(file);
+            if (!NameOFTags1.Equals(NameOFTags2))
+                text += NameOFTags2;
             else
                 text += "Правильные теги\n";
             return true;
@@ -227,7 +227,7 @@ namespace Mp3RenamerV2
             }
             else
             {
-                checkLabel.Text = "Выполнение";
+                checkStatusLabel.Text = "Выполнение";
 
                 bw = new BackgroundWorker();
                 bw.DoWork += checkFileNameBW;
@@ -338,7 +338,7 @@ namespace Mp3RenamerV2
             {
                 infoField.Text += text;
                 paintWords();
-                checkLabel.Text = "Готово";
+                checkStatusLabel.Text = "Готово";
             }
         }
         /// <summary>
@@ -346,14 +346,14 @@ namespace Mp3RenamerV2
         /// </summary>
         private String showTags(String file)
         {
-            String res = "";
+            String rslt = "";
             TagLib.File tagSong = TagLib.File.Create(file);
-            res += "{";
-            res += tagSong.Tag.FirstPerformer == null ? "Пусто" : tagSong.Tag.FirstPerformer;
-            res += "} - {";
-            res += tagSong.Tag.Title == null ? "Пусто" : tagSong.Tag.Title;
-            res += "}\n";
-            return res;
+            rslt += "{";
+            rslt += tagSong.Tag.FirstPerformer == null ? "Пусто" : tagSong.Tag.FirstPerformer;
+            rslt += "} - {";
+            rslt += tagSong.Tag.Title == null ? "Пусто" : tagSong.Tag.Title;
+            rslt += "}\n";
+            return rslt;
         }
         /// <summary>
         /// Обновляет точку открытия openFileDialog
