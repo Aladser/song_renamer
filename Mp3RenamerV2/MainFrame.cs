@@ -9,7 +9,6 @@ namespace Mp3RenamerV2
     public partial class MainFrame : Form
     {
         String text = ""; // буфер
-        int start = 0, length = 0; // Начало и длина крашеного слова
         /// <summary>
         /// Список закрашенных слов
         /// </summary>
@@ -66,16 +65,11 @@ namespace Mp3RenamerV2
 
                 isSelectedFile = true;
                 selectedPath = openFileDialog.FileName;
-                print(selectedPath + "\n");
-                start = infoField.TextLength;
+                print(selectedPath + "\n"); // печать названия файла
+                int start = infoField.TextLength;
                 String str = showTags(selectedPath);
-                print(str);
-                length = infoField.TextLength - start;
-                if(str.Contains("Пусто"))
-                    words.Add(new PainterWord(start, length, 0));
-                else
-                    words.Add(new PainterWord(start, length, 1));
-                infoField.Text += "\n";
+                print(str+"\n");  // печать тегов
+                words.Add(new PainterWord(start, str.Length, str.Contains("Пусто") ? 0 : 1)); // добавляет окрас тегам
                 paintWords();
                 updateStartPath(selectedPath.Substring(0, selectedPath.Length - openFileDialog.SafeFileName.Length));   
             }
@@ -100,7 +94,7 @@ namespace Mp3RenamerV2
             String[] folderFileElements = Directory.GetFileSystemEntries(selectedPath);// элементы папки
             int progressLength = folderFileElements.Length;
             int progress = 0;
-            // Считывает музыкальные файлы
+            // Считывает папки и музыкальные файлы
             string ext, str;
             foreach (String elem in folderFileElements)
             {
@@ -108,14 +102,11 @@ namespace Mp3RenamerV2
                 if (ext==".mp3" || ext==".flac")
                 {
                     text += elem + "\n";
+                    int start = 0;
                     infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки <Артис>-<Название>
                     str = showTags(elem) + "\n";
                     text += str;
-                    infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>                    
-                    if (str.Contains("Пусто"))
-                        words.Add(new PainterWord(start, length, 0));
-                    else
-                        words.Add(new PainterWord(start, length, 1));
+                    words.Add(new PainterWord(start, str.Length, str.Contains("Пусто")?0:1));
                 }
                 else if (Path.GetExtension(elem) == "") 
                     text += elem + "\n";
@@ -189,9 +180,10 @@ namespace Mp3RenamerV2
                 text += NameOFTags2;
             else
                 text += NameOFTags1 + ": ";
-
+            int start = 0;
             infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки <Артис>-<Название>
             text += "правильные теги\n";
+            int length = 0;
             infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>                    
             words.Add(new PainterWord(start, length, 2));
             return true;
@@ -222,9 +214,9 @@ namespace Mp3RenamerV2
                 else
                 {
                     print(filename + ": ");
-                    start = infoField.TextLength + text.Length;
+                    int start = infoField.TextLength + text.Length;
                     print("название файла соотвествует тегам\n");
-                    length = infoField.TextLength + text.Length - start;
+                    int length = infoField.TextLength + text.Length - start;
                     words.Add(new PainterWord(start, length, 2));
                 }
                 paintWords();
@@ -260,6 +252,7 @@ namespace Mp3RenamerV2
                 else
                 {
                     text += folderFileElements[i] + ": ";
+                    int start = 0, length = 0; ;
                     infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки <Артис>-<Название>
                     text += "название соотвествует тегам\n";
                     infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>                    
