@@ -8,6 +8,9 @@ namespace Mp3RenamerV2
 {
     public partial class MainFrame : Form
     {
+        const int COLOR_RED = 0;
+        const int COLOR_BLUE = 1;
+        const int COLOR_GREEN = 2;
         String text = ""; // буфер
         /// <summary>
         /// Список закрашенных слов
@@ -53,7 +56,29 @@ namespace Mp3RenamerV2
             checkTagsBW.DoWork += checkTagsTask;
             checkFilenameBW.DoWork += checkFileNameTask;
         }
-
+        /// <summary>
+        /// Событие завершения фоновой задачи
+        /// </summary>
+        private void runCompletedBW(object sender, RunWorkerCompletedEventArgs e)
+        {
+            infoField.Text += text;
+            paintWords();
+            checkStatusLabel.Text = "Готово";
+        }
+        /// <summary>
+        /// Показывает теги файла
+        /// </summary>
+        private String showTags(String file)
+        {
+            String rslt = "";
+            TagLib.File tagSong = TagLib.File.Create(file);
+            rslt += "{";
+            rslt += tagSong.Tag.FirstPerformer == null ? "Пусто" : tagSong.Tag.FirstPerformer;
+            rslt += "} - {";
+            rslt += tagSong.Tag.Title == null ? "Пусто" : tagSong.Tag.Title;
+            rslt += "}";
+            return rslt;
+        }
         // Событие Открыть файл
         private void openFileMenuItem_Click(object sender, EventArgs e)
         {
@@ -69,8 +94,8 @@ namespace Mp3RenamerV2
                 int start = infoField.TextLength;
                 String str = showTags(selectedPath);
                 print(str+"\n");  // печать тегов
-                words.Add(new PainterWord(start, str.Length, str.Contains("Пусто") ? 0 : 1)); // добавляет окрас тегам
-                paintWords();
+                words.Add(new PainterWord(start, str.Length, str.Contains("Пусто") ? COLOR_RED : COLOR_BLUE)); // добавляет окрас тегам
+                paintWords(); // покраска тегов
                 updateStartPath(selectedPath.Substring(0, selectedPath.Length - openFileDialog.SafeFileName.Length));   
             }
         }
@@ -112,13 +137,12 @@ namespace Mp3RenamerV2
                     text += elem + "\n";
                 openBW.ReportProgress(++progress * 100 / progressLength);
             }
-            // Путь корневой папки
+            // Обновляет место открытия проводника
             String[] foldersInPath = selectedPath.Split("\\"); // число папок в пути
             int rootFolderPathLength = 0;
             for (int i = 0; i < foldersInPath.Length - 1; i++)
                 rootFolderPathLength += foldersInPath[i].Length + 1; // с учетом \
             updateStartPath(selectedPath.Substring(0, rootFolderPathLength));
-            e.Cancel = true;
         }
        // Событие проверки тегов
         private void checkTagsMenuItem_Click(object sender, EventArgs e)
@@ -151,7 +175,6 @@ namespace Mp3RenamerV2
                 checkTags(folderFileElements[i]);
                 checkTagsBW.ReportProgress((i+1)*100/folderFileElements.Length);
             }
-            e.Cancel = true;
         }
         // Проверяет наличие тегов Артист-Название и заполняет их из имени файла
         private bool checkTags(String file)
@@ -216,8 +239,7 @@ namespace Mp3RenamerV2
                     print(filename + ": ");
                     int start = infoField.TextLength + text.Length;
                     print("название файла соотвествует тегам\n");
-                    int length = infoField.TextLength + text.Length - start;
-                    words.Add(new PainterWord(start, length, 2));
+                    words.Add(new PainterWord(start, 33, 2));
                 }
                 paintWords();
             }
@@ -240,27 +262,31 @@ namespace Mp3RenamerV2
                 ext = Path.GetExtension(folderFileElements[i]);
                 if (ext!=".mp3" && ext!=".flac") continue;
                 newname = checkFileName(folderFileElements[i], (bool)e.Argument);
-                if (!folderFileElements[i].Equals(newname))
+                if (newname == null)
+                {
+                    text += folderFileElements[i];
+                    int start = 0;
+                    infoField.Invoke(new Action(() => {
+                        start = infoField.TextLength + text.Length;
+                    }));
+                    text += ": файл занят другим процессом\n";
+                    words.Add(new PainterWord(start, 29, 0));
+                }
+                else if (!folderFileElements[i].Equals(newname))
                 {
                     folderFileElements[i] = newname;
                     text += folderFileElements[i] + "\n";
-                }
-                else if(newname == null)
-                {
-                    text += folderFileElements[i];
                 }
                 else
                 {
                     text += folderFileElements[i] + ": ";
                     int start = 0, length = 0; ;
-                    infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки <Артис>-<Название>
-                    text += "название соотвествует тегам\n";
-                    infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>                    
-                    words.Add(new PainterWord(start, length, 2));
+                    infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки
+                    text += "название соответствует тегам\n";
+                    words.Add(new PainterWord(start, 29, 2));
                 }
                 checkFilenameBW.ReportProgress((i+1) * 100 / folderFileElements.Length);
             }
-            e.Cancel = true;
         }
         /// <summary>
         /// Проверяет и изменяет имя файла на соответствие тегам
@@ -300,7 +326,7 @@ namespace Mp3RenamerV2
                  }
                 catch(System.IO.IOException)
                 {
-                    print("Файл занят другим процессом " + newname + "\n");
+                    //print("Файл занят другим процессом " + newname + "\n");
                     return null;
                 }
                   filename = newname;
@@ -320,32 +346,6 @@ namespace Mp3RenamerV2
         {
             progressLabel.Text = (e.ProgressPercentage.ToString() + "%");
             
-        }
-        /// <summary>
-        /// Событие завершения фоновой задачи
-        /// </summary>
-        private void runCompletedBW(object sender, RunWorkerCompletedEventArgs e)
-        {
-            if (e.Cancelled == true)
-            {
-                infoField.Text += text;
-                paintWords();
-                checkStatusLabel.Text = "Готово";
-            }
-        }
-        /// <summary>
-        /// Показывает теги файла
-        /// </summary>
-        private String showTags(String file)
-        {
-            String rslt = "";
-            TagLib.File tagSong = TagLib.File.Create(file);
-            rslt += "{";
-            rslt += tagSong.Tag.FirstPerformer == null ? "Пусто" : tagSong.Tag.FirstPerformer;
-            rslt += "} - {";
-            rslt += tagSong.Tag.Title == null ? "Пусто" : tagSong.Tag.Title;
-            rslt += "}";
-            return rslt;
         }
         /// <summary>
         /// Обновляет точку открытия openFileDialog
@@ -403,7 +403,7 @@ namespace Mp3RenamerV2
         private struct PainterWord {
             public int start;
             public int length;
-            public int type; // 0-Пусто 1-Тег 2-Другое
+            public int type; // 0-Красный цвет 1-Синий цвет 2-Голубой цвет
             public PainterWord(int start, int length, int type)
             {
                 this.start = start;
