@@ -25,7 +25,9 @@ namespace Mp3RenamerV2
         private OpenFileDialog openFileDialog;
         private FolderBrowserDialog openFolderDialog;
         private String startPath = "";
-        private BackgroundWorker bw; // фоновый поток
+        private BackgroundWorker openBW;
+        private BackgroundWorker checkTagsBW;
+        private BackgroundWorker checkFilenameBW;
 
         public MainFrame()
         {
@@ -35,6 +37,22 @@ namespace Mp3RenamerV2
             openFolderDialog = new FolderBrowserDialog();
             updateStartPath(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
             checkTagsMS.Enabled = false;
+
+            openBW = new BackgroundWorker();
+            checkTagsBW = new BackgroundWorker();
+            checkFilenameBW = new BackgroundWorker();
+            openBW.WorkerReportsProgress = true;
+            checkTagsBW.WorkerReportsProgress = true;
+            checkFilenameBW.WorkerReportsProgress = true;
+            openBW.ProgressChanged += progressChangedBW;
+            checkTagsBW.ProgressChanged += progressChangedBW;
+            checkFilenameBW.ProgressChanged += progressChangedBW;
+            openBW.RunWorkerCompleted += runCompletedBW;
+            checkTagsBW.RunWorkerCompleted += runCompletedBW;
+            checkFilenameBW.RunWorkerCompleted += runCompletedBW;
+            openBW.DoWork += openFolderTask;
+            checkTagsBW.DoWork += checkTagsTask;
+            checkFilenameBW.DoWork += checkFileNameTask;
         }
 
         // Событие Открыть файл
@@ -73,30 +91,15 @@ namespace Mp3RenamerV2
             isSelectedFile = false;
             selectedPath = openFolderDialog.SelectedPath;
             print("    Открыта папка: " + selectedPath + "\n");
-           
-            bw = new BackgroundWorker();
-            bw.WorkerSupportsCancellation = true;
-            bw.WorkerReportsProgress = true;
-            bw.ProgressChanged += progressChangedBW;
-            bw.RunWorkerCompleted += runCompletedBW;
-            bw.DoWork += openFolderBW;
-            bw.RunWorkerAsync();
-            
+            openBW.RunWorkerAsync();
         }
         // Открыть папку. Считывает все названия папок и файлов в text
-        private void openFolderBW(object sender, DoWorkEventArgs e)
+        private void openFolderTask(object sender, DoWorkEventArgs e)
         {
             text = "";
             String[] folderFileElements = Directory.GetFileSystemEntries(selectedPath);// элементы папки
-            int progressLength = 2*folderFileElements.Length;
+            int progressLength = folderFileElements.Length;
             int progress = 0;
-            // Считывает подпапки из папки
-            foreach (String elem in folderFileElements)
-            {
-                if (Path.GetExtension(elem) == "") text += elem+"\n";
-                bw.ReportProgress(++progress * 100/ progressLength);
-                
-            }
             // Считывает музыкальные файлы
             string ext, str;
             foreach (String elem in folderFileElements)
@@ -114,7 +117,9 @@ namespace Mp3RenamerV2
                     else
                         words.Add(new PainterWord(start, length, 1));
                 }
-                bw.ReportProgress(++progress * 100 / progressLength);
+                else if (Path.GetExtension(elem) == "") 
+                    text += elem + "\n";
+                openBW.ReportProgress(++progress * 100 / progressLength);
             }
             // Путь корневой папки
             String[] foldersInPath = selectedPath.Split("\\"); // число папок в пути
@@ -142,25 +147,18 @@ namespace Mp3RenamerV2
             {
                 infoField.Text += "    Проверка тегов файлов\n";
                 checkStatusLabel.Text = "Выполнение";
-                bw = new BackgroundWorker();
-                bw.WorkerSupportsCancellation = true;
-                bw.WorkerReportsProgress = true;
-                bw.ProgressChanged += progressChangedBW;
-                bw.RunWorkerCompleted += runCompletedBW;
-                bw.DoWork += checkTagsBW;
-                bw.RunWorkerAsync();
-                bw.CancelAsync();
+                checkTagsBW.RunWorkerAsync();
             }
         }
         // Фоновая задача проверки тегов
-        private void checkTagsBW(object sender, DoWorkEventArgs e)
+        private void checkTagsTask(object sender, DoWorkEventArgs e)
         {
             String[] folderFileElements = Directory.GetFileSystemEntries(selectedPath);
             for (int i = 0; i < folderFileElements.Length; i++)
             {
                 folderFileElements[i] = deleteRedudantSymbols(folderFileElements[i]);
                 checkTags(folderFileElements[i]);
-                bw.ReportProgress((i+1)*100/folderFileElements.Length);
+                checkTagsBW.ReportProgress((i+1)*100/folderFileElements.Length);
             }
             e.Cancel = true;
         }
@@ -235,22 +233,12 @@ namespace Mp3RenamerV2
             {
                 infoField.Text += "    Проверка соответствия имен файлов тегам\n";
                 checkStatusLabel.Text = "Выполнение";
-
-                bw = new BackgroundWorker();
-                bw.DoWork += checkFileNameBW;
-
-                bw.WorkerSupportsCancellation = true;
-                bw.WorkerReportsProgress = true;
-                bw.ProgressChanged += progressChangedBW;
-                bw.RunWorkerCompleted += runCompletedBW;
-
-                bw.RunWorkerAsync(isAlbum);
-                bw.CancelAsync();
+                checkFilenameBW.RunWorkerAsync(isAlbum);
             }
             return filename;
         }
         // Фоновая задача проверки имени файла
-        private void checkFileNameBW(object sender, DoWorkEventArgs e)
+        private void checkFileNameTask(object sender, DoWorkEventArgs e)
         {
             text = "";
             String[] folderFileElements = Directory.GetFileSystemEntries(selectedPath);
@@ -277,7 +265,7 @@ namespace Mp3RenamerV2
                     infoField.Invoke(new Action(() => { length = infoField.TextLength + text.Length - start; })); // Длина строки <Артис>-<Название>                    
                     words.Add(new PainterWord(start, length, 2));
                 }
-                bw.ReportProgress((i+1) * 100 / folderFileElements.Length);
+                checkFilenameBW.ReportProgress((i+1) * 100 / folderFileElements.Length);
             }
             e.Cancel = true;
         }
@@ -422,7 +410,7 @@ namespace Mp3RenamerV2
         private struct PainterWord {
             public int start;
             public int length;
-            public int type;
+            public int type; // 0-Пусто 1-Тег 2-Другое
             public PainterWord(int start, int length, int type)
             {
                 this.start = start;
