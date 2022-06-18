@@ -135,14 +135,14 @@
             // checkFileNameMenuItem
             // 
             this.checkFileNameMenuItem.Name = "checkFileNameMenuItem";
-            this.checkFileNameMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.checkFileNameMenuItem.Size = new System.Drawing.Size(180, 22);
             this.checkFileNameMenuItem.Text = "файла";
             this.checkFileNameMenuItem.Click += new System.EventHandler(this.checkFileNameMenuItem_Click);
             // 
             // checkAlbFileNameMenuItem
             // 
             this.checkAlbFileNameMenuItem.Name = "checkAlbFileNameMenuItem";
-            this.checkAlbFileNameMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.checkAlbFileNameMenuItem.Size = new System.Drawing.Size(180, 22);
             this.checkAlbFileNameMenuItem.Text = "файла альбома";
             this.checkAlbFileNameMenuItem.Click += new System.EventHandler(this.checkAlbFileNameMenuItem_Click);
             // 
@@ -184,7 +184,7 @@
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainFrame";
-            this.Text = "SongRenamer 1.1";
+            this.Text = "SongRenamer 1.5";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);

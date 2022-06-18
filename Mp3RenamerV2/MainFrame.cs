@@ -14,17 +14,20 @@ namespace Mp3RenamerV2
         /// <summary>
         /// Открытый файл или папка
         /// </summary>
-        string path;                                 // открытый файл или папка
-        String pathExt;                              // расширение открытого элемента
-        List<String> files = new List<String>(); // список музыкальных файлов папки
+        string path;
+        /// <summary>
+        /// Расширение открытого элемента
+        /// </summary>
+        String pathExt;                           
+        /// <summary>
+        /// список музыкальных файлов
+        /// </summary>
+        List<String> files = new List<String>();
         /// <summary>
         /// Список закрашенных слов
         /// </summary>
         List<PainterWord> words = new List<PainterWord>();
-        /// <summary>
-        /// Флаг открытого файла или папки
-        /// </summary>
-        String text = ""; // буфер
+        String textBuffer = ""; // буфер
 
         private OpenFileDialog openFileDialog;
         private FolderBrowserDialog openFolderDialog;
@@ -70,7 +73,7 @@ namespace Mp3RenamerV2
         /// </summary>
         private void runCompletedBW(object sender, RunWorkerCompletedEventArgs e)
         {
-            infoField.Text += text;
+            infoField.Text += textBuffer;
             paintWords();
             checkStatusLabel.Text = "Готово";
         }
@@ -104,6 +107,15 @@ namespace Mp3RenamerV2
         {
             infoField.Invoke(new Action(() => { infoField.Text += text; }));
         }
+        /// <summary>
+        /// Очищает infoField
+        /// </summary>
+        private void clearInfoField_Click(object sender, EventArgs e)
+        {
+            infoField.Text = "";
+            words.Clear();
+        }
+
         // Событие 'Открыть файл'
         private void openFileMenuItem_Click(object sender, EventArgs e)
         {
@@ -128,7 +140,7 @@ namespace Mp3RenamerV2
                 checkNameMenuItem.Enabled = true;
             }));
             files.Clear();
-            text = "";
+            textBuffer = "";
 
             String[]? folderFileElements = null;
             pathExt = Path.GetExtension(path);
@@ -149,14 +161,14 @@ namespace Mp3RenamerV2
             {
                 ext = Path.GetExtension(elem);
                 if (ext=="")
-                    text += elem + "\n";
+                    textBuffer += elem + "\n";
                 else if (ext==".mp3" || ext==".flac")
                 {
                     files.Add(elem);
-                    text += elem + "\n";
+                    textBuffer += elem + "\n";
                     tagsName = showTags(elem);
                     printAndAddWordForPainting(tagsName, tagsName.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, true);
-                    text += "\n";
+                    textBuffer += "\n";
                 }
                 openBW.ReportProgress(++progress * 100 / progressLength);
             }
@@ -179,15 +191,33 @@ namespace Mp3RenamerV2
         // Фоновая задача проверки тегов
         private void checkTagsTask(object sender, DoWorkEventArgs e)
         {
-            text = "";
+            textBuffer = "";
             int start, length;
             string name;
             for (int i = 0; i < files.Count; i++)
             {
-                files[i] = deleteKissVK(files[i]);
-                files[i] = correctHyphen(files[i]);
-
-                // Проверяет название песни, вырезает из названия файла
+                // удаление -kissvk.com из названия
+                if (files[i].Contains("-kissvk.com"))
+                {
+                    name = files[i].Remove(files[i].IndexOf("-kissvk.com"), 11);
+                    System.IO.File.Move(files[i], name);
+                    files[i] = name;
+                }
+                // замена '-' на ' - '
+                if (files[i].Contains("-") && !files[i].Contains(" - "))
+                {
+                    {
+                        name = files[i].Replace("-", " - ");
+                        if (!System.IO.File.Exists(name))
+                        {
+                            System.IO.File.Move(files[i], name);
+                            files[i] = name;
+                        }
+                        else
+                            printAndAddWordForPainting(name+" уже существует", COLOR_RED, true);
+                    }
+                }
+                // Проверяет название песни, вырезает из названия файла при отстутствии
                 TagLib.File tags = TagLib.File.Create(files[i]);
                 if (tags.Tag.Title == null)
                 {
@@ -196,7 +226,7 @@ namespace Mp3RenamerV2
                     tags.Tag.Title = files[i].Substring(start, length);
                     tags.Save();
                 }
-                // Проверяет исполнителя, вырезает из короткого имени файла
+                // Проверяет исполнителя, вырезает из короткого названия файла
                 if (tags.Tag.FirstPerformer == null)
                 {
                     name = Path.GetFileName(files[i]);
@@ -204,9 +234,9 @@ namespace Mp3RenamerV2
                     tags.Save();
                 }
 
-                text += showTags(files[i]);
+                textBuffer += showTags(files[i]);
                 printAndAddWordForPainting("   правильные теги", COLOR_GREEN, true);
-                text += "\n";
+                textBuffer += "\n";
                 checkTagsBW.ReportProgress((i+1)*100/ files.Count);
             }
         }
@@ -221,7 +251,7 @@ namespace Mp3RenamerV2
         {
             checkFileName_Click(path, true);
         }
-        // Проверяет и изменяет имя файла на соответствие тегам
+        // Общее событие 'Проверка имени файла'
         private void checkFileName_Click(String path, bool isAlbum)
         {
             if(pathExt == "")
@@ -232,7 +262,7 @@ namespace Mp3RenamerV2
         // Фоновая задача проверки имени файла
         private void checkFileNameTask(object sender, DoWorkEventArgs e)
         {
-            text = "";
+            textBuffer = "";
             bool isAlbum = (bool)e.Argument;
             string newFilename;
             int progress = 0;
@@ -243,7 +273,7 @@ namespace Mp3RenamerV2
                 // Проверяется наличие тегов
                 if(tags.Tag.Performers == null || tags.Tag.Title == null)
                 {
-                    text += files[i];
+                    textBuffer += files[i];
                     printAndAddWordForPainting("   пустые теги\n", COLOR_RED, true);
                     return;
                 }
@@ -265,74 +295,31 @@ namespace Mp3RenamerV2
                     {
                         System.IO.File.Move(files[i], newFilename);
                         files[i] = newFilename;
-                        text += files[i] + "\n";
+                        textBuffer += files[i] + "\n";
                     }
                     catch (System.IO.DirectoryNotFoundException)
                     {
-                        text += files[i];
+                        textBuffer += files[i];
                         printAndAddWordForPainting("   DirectoryNotFoundException\n", COLOR_RED, true);
                     }
                     catch (System.IO.IOException)
                     {
-                        text += files[i];
+                        textBuffer += files[i];
                         printAndAddWordForPainting("   System.IO.IOException: возможно, файл открыт в другой программе\n", COLOR_RED, true);
                     }
                 }
                 else
                 {
-                    text += files[i];
+                    textBuffer += files[i];
                     printAndAddWordForPainting("   название соответствует тегам\n", COLOR_GREEN, true);
                 }
                 checkFilenameBW.ReportProgress(++progress * 100 / files.Count);
             }
         }
-        // Удаляет из имени файла -kissvk.com
-        private string deleteKissVK(string filename)
-        {
-            String kissVK = "-kissvk.com";
-            String newName;
-            if (filename.Contains(kissVK))
-            {
-                newName = filename.Remove(filename.IndexOf(kissVK), kissVK.Length);
-                System.IO.File.Move(filename, newName);
-                return newName;
-            }
-            return filename;
-        }
-        // редактирует " - "
-        private string correctHyphen(string filename)
-        {
-            String newName;
-            if (filename.Contains("-") && !filename.Contains(" - "))
-            {
-                {
-                    newName = filename.Replace("-", " - ");
-                    if (!System.IO.File.Exists(newName))
-                    {
-                        System.IO.File.Move(filename, newName);
-                        filename = newName;
-                    }
-                    else
-                    {
-                        return "ALREADYEXISTS" + newName;
-                    }
-                }
-            }
-            return filename;
-        }
 
         /// <summary>
-        /// Очищает infoField
+        /// Класс закрашенного слова
         /// </summary>
-        private void clearInfoField_Click(object sender, EventArgs e)
-        {
-            infoField.Text = "";
-            words = new List<PainterWord>();
-
-        }
-        ///
-        /// Класс Закрашенные слова
-        /// 
         private struct PainterWord {
             public int start;
             public int length;
@@ -344,7 +331,9 @@ namespace Mp3RenamerV2
                 this.type = type;
             }
         }
-
+        /// <summary>
+        /// Красит слова
+        /// </summary>
         private void paintWords()
         {
             for (int i = 0; i < words.Count; i++)
@@ -376,10 +365,10 @@ namespace Mp3RenamerV2
         private void printAndAddWordForPainting(string word, int color, bool isBuffer)
         {
             int start=0;
-            infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки
+            infoField.Invoke(new Action(() => { start = infoField.TextLength + textBuffer.Length; })); // Старт строки
             words.Add(new PainterWord(start, word.Length, color));
             if (isBuffer)
-                text += word;
+                textBuffer += word;
             else
                 print(word + "\n");
         }
