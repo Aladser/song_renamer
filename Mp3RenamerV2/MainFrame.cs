@@ -11,7 +11,10 @@ namespace Mp3RenamerV2
         const int COLOR_RED = 0;
         const int COLOR_BLUE = 1;
         const int COLOR_GREEN = 2;
-        String text = ""; // буфер
+        /// <summary>
+        /// Список открытых файлов
+        /// </summary>
+        List<String> files = new List<String>();
         /// <summary>
         /// Список закрашенных слов
         /// </summary>
@@ -23,6 +26,7 @@ namespace Mp3RenamerV2
         /// <summary>
         /// Флаг открытого файла или папки
         /// </summary>
+        String text = ""; // буфер
         private bool isSelectedFile = true; // Флаг выбора файла или папки
         private OpenFileDialog openFileDialog;
         private FolderBrowserDialog openFolderDialog;
@@ -82,22 +86,20 @@ namespace Mp3RenamerV2
         // Событие Открыть файл
         private void openFileMenuItem_Click(object sender, EventArgs e)
         {
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                checkStatusLabel.Text = "";
-                checkTagsMenuItem.Enabled = true;
-                checkNameMenuItem.Enabled = true;
+            if (openFileDialog.ShowDialog() != DialogResult.OK) return;
+            checkStatusLabel.Text = "";
+            checkTagsMenuItem.Enabled = true;
+            checkNameMenuItem.Enabled = true;
 
-                isSelectedFile = true;
-                selectedPath = openFileDialog.FileName;
-                print(selectedPath + "\n"); // печать названия файла
-                int start = infoField.TextLength;
-                String str = showTags(selectedPath);
-                print(str+"\n");  // печать тегов
-                words.Add(new PainterWord(start, str.Length, str.Contains("Пусто") ? COLOR_RED : COLOR_BLUE)); // добавляет окрас тегам
-                paintWords(); // покраска тегов
-                updateStartPath(selectedPath.Substring(0, selectedPath.Length - openFileDialog.SafeFileName.Length));   
-            }
+            isSelectedFile = true;
+            selectedPath = openFileDialog.FileName;
+            print(selectedPath + "\n"); // печать названия файла
+            int start = infoField.TextLength;
+            String str = showTags(selectedPath);
+            print(str+"\n");  // печать тегов
+            words.Add(new PainterWord(start, str.Length, str.Contains("Пусто") ? COLOR_RED : COLOR_BLUE)); // добавляет окрас тегам
+            paintWords(); // покраска тегов
+            updateStartPath(selectedPath.Substring(0, selectedPath.Length - openFileDialog.SafeFileName.Length));   
         }
         // Событие Открыть папку
         private void openFolderMenuItem_Click(object sender, EventArgs e)
