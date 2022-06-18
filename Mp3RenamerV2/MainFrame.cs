@@ -15,8 +15,8 @@ namespace Mp3RenamerV2
         /// Открытый файл или папка
         /// </summary>
         string path;                                 // открытый файл или папка
+        String pathExt;                              // расширение открытого элемента
         List<String> files = new List<String>(); // список музыкальных файлов папки
-        bool isSelectedFile = true;                  // файл или папка
         /// <summary>
         /// Список закрашенных слов
         /// </summary>
@@ -54,7 +54,7 @@ namespace Mp3RenamerV2
             openBW.RunWorkerCompleted += runCompletedBW;
             checkTagsBW.RunWorkerCompleted += runCompletedBW;
             checkFilenameBW.RunWorkerCompleted += runCompletedBW;
-            openBW.DoWork += openExplorerElementBW;
+            openBW.DoWork += openExplorerElementTask;
             checkTagsBW.DoWork += checkTagsTask;
             checkFilenameBW.DoWork += checkFileNameTask;
         }
@@ -108,7 +108,6 @@ namespace Mp3RenamerV2
         private void openFileMenuItem_Click(object sender, EventArgs e)
         {
             if (openFileDialog.ShowDialog() != DialogResult.OK) return;
-            isSelectedFile = true;
             path = openFileDialog.FileName;
             openBW.RunWorkerAsync();  
         }
@@ -116,13 +115,12 @@ namespace Mp3RenamerV2
         private void openFolderMenuItem_Click(object sender, EventArgs e)
         {
             if (openFolderDialog.ShowDialog() != DialogResult.OK) return;
-            isSelectedFile = false;
             path = openFolderDialog.SelectedPath;
             print("    Открыта папка: " + path + "\n");
             openBW.RunWorkerAsync();
         }
-        // Открыть папку. Считывает все названия папок и файлов в text
-        private void openExplorerElementBW(object sender, DoWorkEventArgs e)
+        // Фоновая задача открытия папки или файла
+        private void openExplorerElementTask(object sender, DoWorkEventArgs e)
         {
             checkStatusLabel.Invoke(new Action(() => { 
                 checkStatusLabel.Text = "";
@@ -133,7 +131,8 @@ namespace Mp3RenamerV2
             text = "";
 
             String[]? folderFileElements = null;
-            if (Path.GetExtension(path) == "")
+            pathExt = Path.GetExtension(path);
+            if (pathExt == "")
             {
                 folderFileElements = Directory.GetFileSystemEntries(path);
             }
@@ -168,208 +167,125 @@ namespace Mp3RenamerV2
                 rootFolderPathLength += foldersInPath[i].Length + 1; // с учетом \
             updateStartPath(path.Substring(0, rootFolderPathLength));
         }
-       // Событие проверки тегов
+        
+        // Событие 'Проверка тегов'
         private void checkTagsMenuItem_Click(object sender, EventArgs e)
         {
-            text = "";
-            // файла
-            if (isSelectedFile)
-            {
-                checkStatusLabel.Text = "";
-                path = deleteKissVK(path);
-                String newpath = correctHyphen(path);
-                if (!newpath.Contains("ALREADYEXISTS"))
-                {
-                    path = newpath;
-                    checkTags(path);
-                    print(showTags(path));
-                    printAndAddWordForPainting("   правильные теги", COLOR_GREEN, false);
-                }
-                else
-                {
-                    print(newpath.Substring(13));
-                    printAndAddWordForPainting("   уже существует", COLOR_RED, false);
-                }     
-            }
-            // папка
-            else
-            {
+            if(pathExt == "")
                 infoField.Text += "    Проверка тегов файлов\n";
-                checkStatusLabel.Text = "Выполнение";
-                checkTagsBW.RunWorkerAsync();
-            }
-            paintWords();
+            checkStatusLabel.Text = "Выполнение";
+            checkTagsBW.RunWorkerAsync();
         }
         // Фоновая задача проверки тегов
         private void checkTagsTask(object sender, DoWorkEventArgs e)
         {
+            text = "";
+            int start, length;
+            string name;
             for (int i = 0; i < files.Count; i++)
             {
                 files[i] = deleteKissVK(files[i]);
                 files[i] = correctHyphen(files[i]);
-                checkTags(files[i]);
+
+                // Проверяет название песни, вырезает из названия файла
+                TagLib.File tags = TagLib.File.Create(files[i]);
+                if (tags.Tag.Title == null)
+                {
+                    start = files[i].LastIndexOf("-") + 2; // начало выреза
+                    length = files[i].Length - start - 4; // число символов для выреза, 4 - длина расширения
+                    tags.Tag.Title = files[i].Substring(start, length);
+                    tags.Save();
+                }
+                // Проверяет исполнителя, вырезает из короткого имени файла
+                if (tags.Tag.FirstPerformer == null)
+                {
+                    name = Path.GetFileName(files[i]);
+                    tags.Tag.Performers = new String[1] { name.Substring(0, name.LastIndexOf("-") - 1) };
+                    tags.Save();
+                }
+
                 text += showTags(files[i]);
                 printAndAddWordForPainting("   правильные теги", COLOR_GREEN, true);
                 text += "\n";
                 checkTagsBW.ReportProgress((i+1)*100/ files.Count);
             }
         }
-        /// <summary>
-        /// Проверяет наличие тегов и меняет на корректные
-        /// </summary>
-        /// <param name="path">Путь к файлу</param>
-        private void checkTags(String path)
-        {
-            TagLib.File tags = TagLib.File.Create(path);
-            String filename = Path.GetFileName(path);
-            // Проверяет название песни, вырезает из названия файла
-            if (tags.Tag.Title == null)
-            {
-                int start = filename.LastIndexOf("-") + 2; // начало выреза
-                int length = filename.Length - start - 4; // число символов для выреза, 4 - длина расширения
-                tags.Tag.Title = filename.Substring(start, length);
-                tags.Save();
-            }
-            // Проверяет исполнителя, вырезает из короткого имени файла
-            if (tags.Tag.FirstPerformer == null)
-            {
-                tags.Tag.Performers = new String[1] { filename.Substring(0, filename.LastIndexOf("-") - 1) };
-                tags.Save();
-            }
-        }
+        
         // Событие 'Проверка имени файла'
         private void checkFileNameMenuItem_Click(object sender, EventArgs e)
         {
-            path = checkFileName_Click(path, false);
+            checkFileName_Click(path, false);
         }
         // Событие 'Проверка имени файла альбома'
         private void checkAlbFileNameMenuItem_Click(object sender, EventArgs e)
         {
-            path = checkFileName_Click(path, true);
+            checkFileName_Click(path, true);
         }
         // Проверяет и изменяет имя файла на соответствие тегам
-        private string checkFileName_Click(String path, bool isAlbum)
+        private void checkFileName_Click(String path, bool isAlbum)
         {
-            text = "";
-            if (isSelectedFile)
-            {
-                string newname = checkFileName(path, isAlbum);
-                if (newname.Contains("NULLTAGS"))
-                {
-                    print(newname.Substring(8));
-                    printAndAddWordForPainting("   пустые теги", COLOR_RED, false);
-                }
-                else if (newname == null)
-                {
-                    print(path);
-                    printAndAddWordForPainting(": есть пустые теги", COLOR_RED, false);
-                    print(": есть пустые теги\n");
-                }
-                else if (!path.Equals(newname))
-                {
-                    path = newname;
-                    print(path + "\n");
-                }
-                else
-                {
-                    print(path);
-                    printAndAddWordForPainting("   название файла соотвествует тегам", COLOR_GREEN, false);
-                }
-                paintWords();
-            }
-            else
-            {
+            if(pathExt == "")
                 infoField.Text += "    Проверка соответствия имен файлов тегам\n";
-                checkStatusLabel.Text = "Выполнение";
-                checkFilenameBW.RunWorkerAsync(isAlbum);
-            }
-            return path;
+            checkStatusLabel.Text = "Выполнение";
+            checkFilenameBW.RunWorkerAsync(isAlbum);
         }
         // Фоновая задача проверки имени файла
         private void checkFileNameTask(object sender, DoWorkEventArgs e)
         {
             text = "";
-            string newname;
+            bool isAlbum = (bool)e.Argument;
+            string newFilename;
+            int progress = 0;
             for (int i = 0; i < files.Count; i++)
             {
-                newname = checkFileName(files[i], (bool)e.Argument);
-                if (newname.Contains("NULLTAGS"))
+                newFilename = files[i].Substring(0, files[i].Length - Path.GetFileName(files[i]).Length); // копируется корень пути
+                TagLib.File tags = TagLib.File.Create(files[i]);
+                // Проверяется наличие тегов
+                if(tags.Tag.Performers == null || tags.Tag.Title == null)
                 {
                     text += files[i];
                     printAndAddWordForPainting("   пустые теги\n", COLOR_RED, true);
+                    return;
                 }
-                else if (newname.Equals("IOException"))
+                // Записывается номер трека для файла из альбома
+                if (isAlbum)
                 {
-                    text += files[i];
-                    printAndAddWordForPainting("   файл занят другим процессом\n", COLOR_RED, true);
+                    if (tags.Tag.Track < 10) 
+                        newFilename += "0" + tags.Tag.Track + ". ";
+                    else 
+                        newFilename += tags.Tag.Track + ". ";
                 }
-                else if (newname.Equals("DirectoryNotFoundException"))
+                // Дописывается в имя файла Исполнитель, Название, Формат
+                newFilename += tags.Tag.Performers[0] + " - " + tags.Tag.Title;
+                newFilename += Path.GetExtension(files[i]) == ".mp3" ? ".mp3" : ".flac";
+                // Переименование
+                if (!files[i].Equals(newFilename))
                 {
-                    text += files[i];
-                    printAndAddWordForPainting("   DirectoryNotFoundException\n", COLOR_RED, true);
-                }
-                else if (!files[i].Equals(newname))
-                {
-                    files[i] = newname;
-                    text += files[i] + "\n";
+                    try
+                    {
+                        System.IO.File.Move(files[i], newFilename);
+                        files[i] = newFilename;
+                        text += files[i] + "\n";
+                    }
+                    catch (System.IO.DirectoryNotFoundException)
+                    {
+                        text += files[i];
+                        printAndAddWordForPainting("   DirectoryNotFoundException\n", COLOR_RED, true);
+                    }
+                    catch (System.IO.IOException)
+                    {
+                        text += files[i];
+                        printAndAddWordForPainting("   System.IO.IOException: возможно, файл открыт в другой программе\n", COLOR_RED, true);
+                    }
                 }
                 else
                 {
                     text += files[i];
                     printAndAddWordForPainting("   название соответствует тегам\n", COLOR_GREEN, true);
                 }
-                checkFilenameBW.ReportProgress((i+1) * 100 / files.Count);
+                checkFilenameBW.ReportProgress(++progress * 100 / files.Count);
             }
         }
-        /// <summary>
-        /// Проверяет и изменяет имя файла на соответствие тегам
-        /// </summary>
-        private string checkFileName(String filename, bool isAlbum)
-        {
-
-            string newname = filename.Substring(0, filename.Length - Path.GetFileName(filename).Length);
-            TagLib.File tags = TagLib.File.Create(filename);
-            // Проверяется наличие тегов
-            if(tags.Tag.Performers == null || tags.Tag.Title == null)
-            {
-                return "NULLTAGS"+filename;
-            }
-            // Записывается номер трека для файла из альбома
-            if (isAlbum)
-            {
-                if (tags.Tag.Track < 10) newname += "0" + tags.Tag.Track + ". ";
-                else newname += tags.Tag.Track + ". ";
-            }
-            // Создается имя файла из тегов
-            newname += tags.Tag.Performers[0] + " - " + tags.Tag.Title;
-            newname += Path.GetExtension(filename) == ".mp3" ? ".mp3" : ".flac";
-            {
-                 try
-                 {
-                    System.IO.File.Move(filename, newname);
-                 }
-                 catch (System.IO.DirectoryNotFoundException)
-                 {
-                    return "DirectoryNotFoundException";
-                 }
-                catch(System.IO.IOException)
-                {
-                    return "IOException";
-                }
-                  filename = newname;
-            }
-            newname = deleteKissVK(filename);
-            newname = correctHyphen(filename);
-            if (!filename.Equals(newname))
-            {
-                System.IO.File.Move(filename, newname);
-                filename = newname;
-            }
-            return filename;
-        }
-
-
-        
         // Удаляет из имени файла -kissvk.com
         private string deleteKissVK(string filename)
         {
@@ -462,15 +378,10 @@ namespace Mp3RenamerV2
             int start=0;
             infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки
             words.Add(new PainterWord(start, word.Length, color));
-            if (!isBuffer)
-            {
-                
-                print(word+"\n");
-            }
-            else
-            {
+            if (isBuffer)
                 text += word;
-            }
+            else
+                print(word + "\n");
         }
     }
 }
