@@ -39,6 +39,7 @@ namespace Mp3RenamerV2
         public MainFrame()
         {
             InitializeComponent();
+            MaximizeBox = false;
             openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "mp3-פאיכû (*.mp3)|*.mp3|flac-פאיכû (*.flac)|*.flac|ֲסו פאיכû (*.*)|*.*";
             openFolderDialog = new FolderBrowserDialog();
