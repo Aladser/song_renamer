@@ -149,10 +149,19 @@ namespace Mp3RenamerV2
             {
                 checkStatusLabel.Text = "";
                 path = deleteKissVK(path);
-                path = correctHyphen(path);
-                checkTags(path);
-                print(showTags(path));
-                addAndPaintWordForPainting("   правильные теги", COLOR_GREEN, false);
+                String newpath = correctHyphen(path);
+                if (!newpath.Contains("ALREADYEXISTS"))
+                {
+                    path = newpath;
+                    checkTags(path);
+                    print(showTags(path));
+                    addAndPaintWordForPainting("   правильные теги", COLOR_GREEN, false);
+                }
+                else
+                {
+                    print(newpath.Substring(13));
+                    addAndPaintWordForPainting("   уже существует", COLOR_RED, false);
+                }     
             }
             // папка
             else
@@ -217,7 +226,12 @@ namespace Mp3RenamerV2
             if (isSelectedFile)
             {
                 string newname = checkFileName(path, isAlbum);
-                if (newname == null)
+                if (newname.Contains("NULLTAGS"))
+                {
+                    print(newname.Substring(8));
+                    addAndPaintWordForPainting("   пустые теги", COLOR_RED, false);
+                }
+                else if (newname == null)
                 {
                     print(path);
                     addAndPaintWordForPainting(": есть пустые теги", COLOR_RED, false);
@@ -226,7 +240,7 @@ namespace Mp3RenamerV2
                     paintWords();
                     return path;
                 }
-                if (!path.Equals(newname))
+                else if (!path.Equals(newname))
                 {
                     path = newname;
                     print(path + "\n");
@@ -256,7 +270,12 @@ namespace Mp3RenamerV2
             for (int i = 0; i < pathFiles.Count; i++)
             {
                 newname = checkFileName(pathFiles[i], (bool)e.Argument);
-                if (newname.Equals("IOException"))
+                if (newname.Contains("NULLTAGS"))
+                {
+                    text += pathFiles[i];
+                    addAndPaintWordForPainting("   пустые теги\n", COLOR_RED, true);
+                }
+                else if (newname.Equals("IOException"))
                 {
                     text += pathFiles[i];
                     addAndPaintWordForPainting("   файл занят другим процессом\n", COLOR_RED, true);
@@ -265,11 +284,6 @@ namespace Mp3RenamerV2
                 {
                     text += pathFiles[i];
                     addAndPaintWordForPainting("   DirectoryNotFoundException\n", COLOR_RED, true);
-                }
-                else if (newname.Contains("NULLTAGS"))
-                {
-                    text += pathFiles[i];
-                    addAndPaintWordForPainting("   пустые теги\n", COLOR_RED, true);
                 }
                 else if (!pathFiles[i].Equals(newname))
                 {
@@ -375,8 +389,15 @@ namespace Mp3RenamerV2
             {
                 {
                     newName = filename.Replace("-", " - ");
-                    System.IO.File.Move(filename, newName);
-                    filename = newName;
+                    if (!System.IO.File.Exists(newName))
+                    {
+                        System.IO.File.Move(filename, newName);
+                        filename = newName;
+                    }
+                    else
+                    {
+                        return "ALREADYEXISTS" + newName;
+                    }
                 }
             }
             return filename;
