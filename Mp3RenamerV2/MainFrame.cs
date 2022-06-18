@@ -88,6 +88,22 @@ namespace Mp3RenamerV2
             rslt += "}";
             return rslt;
         }
+        /// <summary>
+        /// Обновляет точку открытия openFileDialog
+        /// </summary>
+        private void updateStartPath(String value)
+        {
+            startPath = value;
+            openFileDialog.InitialDirectory = startPath;
+            openFolderDialog.InitialDirectory = startPath;
+        }
+        /// <summary>
+        /// Выводит информацию в infoField
+        /// </summary>
+        private void print(String text)
+        {
+            infoField.Invoke(new Action(() => { infoField.Text += text; }));
+        }
         // Событие 'Открыть файл'
         private void openFileMenuItem_Click(object sender, EventArgs e)
         {
@@ -352,22 +368,8 @@ namespace Mp3RenamerV2
             return filename;
         }
 
-        /// <summary>
-        /// Обновляет точку открытия openFileDialog
-        /// </summary>
-        private void updateStartPath(String value)
-        {
-            startPath = value;
-            openFileDialog.InitialDirectory = startPath;
-            openFolderDialog.InitialDirectory = startPath;
-        }
-        /// <summary>
-        /// Выводит информацию в infoField
-        /// </summary>
-        private void print(String text)
-        {
-            infoField.Invoke(new Action(() => { infoField.Text += text; }));
-        }
+
+        
         // Удаляет из имени файла -kissvk.com
         private string deleteKissVK(string filename)
         {
