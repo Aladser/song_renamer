@@ -91,7 +91,7 @@ namespace Mp3RenamerV2
             path = openFileDialog.FileName;
             print(path + "\n");        // печать названия файла
             String tagsName = showTags(path);
-            addAndPaintWordForPainting(tagsName, tagsName.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, false);
+            printAndAddWordForPainting(tagsName, tagsName.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, false);
             paintWords();                 // покраска тегов
             updateStartPath(path.Substring(0, path.Length - openFileDialog.SafeFileName.Length));   
         }
@@ -128,7 +128,7 @@ namespace Mp3RenamerV2
                     pathFiles.Add(elem);
                     text += elem + "\n";
                     str = showTags(elem);
-                    addAndPaintWordForPainting(str, str.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, true);
+                    printAndAddWordForPainting(str, str.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, true);
                     text += "\n";
                 }
                 openBW.ReportProgress(++progress * 100 / progressLength);
@@ -155,12 +155,12 @@ namespace Mp3RenamerV2
                     path = newpath;
                     checkTags(path);
                     print(showTags(path));
-                    addAndPaintWordForPainting("   правильные теги", COLOR_GREEN, false);
+                    printAndAddWordForPainting("   правильные теги", COLOR_GREEN, false);
                 }
                 else
                 {
                     print(newpath.Substring(13));
-                    addAndPaintWordForPainting("   уже существует", COLOR_RED, false);
+                    printAndAddWordForPainting("   уже существует", COLOR_RED, false);
                 }     
             }
             // папка
@@ -181,7 +181,7 @@ namespace Mp3RenamerV2
                 pathFiles[i] = correctHyphen(pathFiles[i]);
                 checkTags(pathFiles[i]);
                 text += showTags(pathFiles[i]);
-                addAndPaintWordForPainting("   правильные теги", COLOR_GREEN, true);
+                printAndAddWordForPainting("   правильные теги", COLOR_GREEN, true);
                 text += "\n";
                 checkTagsBW.ReportProgress((i+1)*100/ pathFiles.Count);
             }
@@ -229,16 +229,13 @@ namespace Mp3RenamerV2
                 if (newname.Contains("NULLTAGS"))
                 {
                     print(newname.Substring(8));
-                    addAndPaintWordForPainting("   пустые теги", COLOR_RED, false);
+                    printAndAddWordForPainting("   пустые теги", COLOR_RED, false);
                 }
                 else if (newname == null)
                 {
                     print(path);
-                    addAndPaintWordForPainting(": есть пустые теги", COLOR_RED, false);
-                    print(": есть пустые теги");
-                    print("\n");
-                    paintWords();
-                    return path;
+                    printAndAddWordForPainting(": есть пустые теги", COLOR_RED, false);
+                    print(": есть пустые теги\n");
                 }
                 else if (!path.Equals(newname))
                 {
@@ -247,10 +244,8 @@ namespace Mp3RenamerV2
                 }
                 else
                 {
-                    print(path + ": ");
-                    int start = infoField.TextLength + text.Length;
-                    print("название файла соотвествует тегам\n");
-                    words.Add(new PainterWord(start, 33, 2));
+                    print(path);
+                    printAndAddWordForPainting("   название файла соотвествует тегам", COLOR_GREEN, false);
                 }
                 paintWords();
             }
@@ -273,17 +268,17 @@ namespace Mp3RenamerV2
                 if (newname.Contains("NULLTAGS"))
                 {
                     text += pathFiles[i];
-                    addAndPaintWordForPainting("   пустые теги\n", COLOR_RED, true);
+                    printAndAddWordForPainting("   пустые теги\n", COLOR_RED, true);
                 }
                 else if (newname.Equals("IOException"))
                 {
                     text += pathFiles[i];
-                    addAndPaintWordForPainting("   файл занят другим процессом\n", COLOR_RED, true);
+                    printAndAddWordForPainting("   файл занят другим процессом\n", COLOR_RED, true);
                 }
                 else if (newname.Equals("DirectoryNotFoundException"))
                 {
                     text += pathFiles[i];
-                    addAndPaintWordForPainting("   DirectoryNotFoundException\n", COLOR_RED, true);
+                    printAndAddWordForPainting("   DirectoryNotFoundException\n", COLOR_RED, true);
                 }
                 else if (!pathFiles[i].Equals(newname))
                 {
@@ -293,7 +288,7 @@ namespace Mp3RenamerV2
                 else
                 {
                     text += pathFiles[i];
-                    addAndPaintWordForPainting("   название соответствует тегам\n", COLOR_GREEN, true);
+                    printAndAddWordForPainting("   название соответствует тегам\n", COLOR_GREEN, true);
                 }
                 checkFilenameBW.ReportProgress((i+1) * 100 / pathFiles.Count);
             }
@@ -455,7 +450,7 @@ namespace Mp3RenamerV2
         /// </summary>
         /// <param name="word"> слово </param>
         /// <param name="isBuffer"> true - если слово для буфера </param>
-        private void addAndPaintWordForPainting(string word, int color, bool isBuffer)
+        private void printAndAddWordForPainting(string word, int color, bool isBuffer)
         {
             int start=0;
             infoField.Invoke(new Action(() => { start = infoField.TextLength + text.Length; })); // Старт строки
