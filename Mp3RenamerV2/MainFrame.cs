@@ -148,7 +148,8 @@ namespace Mp3RenamerV2
             if (isSelectedFile)
             {
                 checkStatusLabel.Text = "";
-                path = deleteRedudantSymbols(path);
+                path = deleteKissVK(path);
+                path = correctHyphen(path);
                 checkTags(path);
                 print(showTags(path));
                 addAndPaintWordForPainting("   правильные теги", COLOR_GREEN, false);
@@ -167,7 +168,8 @@ namespace Mp3RenamerV2
         {
             for (int i = 0; i < pathFiles.Count; i++)
             {
-                pathFiles[i] = deleteRedudantSymbols(pathFiles[i]);
+                pathFiles[i] = deleteKissVK(pathFiles[i]);
+                pathFiles[i] = correctHyphen(pathFiles[i]);
                 checkTags(pathFiles[i]);
                 text += showTags(pathFiles[i]);
                 addAndPaintWordForPainting("   правильные теги", COLOR_GREEN, true);
@@ -264,6 +266,11 @@ namespace Mp3RenamerV2
                     text += pathFiles[i];
                     addAndPaintWordForPainting("   DirectoryNotFoundException\n", COLOR_RED, true);
                 }
+                else if (newname.Contains("NULLTAGS"))
+                {
+                    text += pathFiles[i];
+                    addAndPaintWordForPainting("   пустые теги\n", COLOR_RED, true);
+                }
                 else if (!pathFiles[i].Equals(newname))
                 {
                     pathFiles[i] = newname;
@@ -288,7 +295,7 @@ namespace Mp3RenamerV2
             // Проверяется наличие тегов
             if(tags.Tag.Performers == null || tags.Tag.Title == null)
             {
-                return null;
+                return "NULLTAGS"+filename;
             }
             // Записывается номер трека для файла из альбома
             if (isAlbum)
@@ -314,7 +321,8 @@ namespace Mp3RenamerV2
                 }
                   filename = newname;
             }
-            newname = deleteRedudantSymbols(filename);
+            newname = deleteKissVK(filename);
+            newname = correctHyphen(filename);
             if (!filename.Equals(newname))
             {
                 System.IO.File.Move(filename, newname);
@@ -346,21 +354,23 @@ namespace Mp3RenamerV2
         {
             infoField.Invoke(new Action(() => { infoField.Text += text; }));
         }
-        /// <summary>
-        /// Удаляет лишние символы из названий
-        /// </summary>
-        private string deleteRedudantSymbols(string filename)
+        // Удаляет из имени файла -kissvk.com
+        private string deleteKissVK(string filename)
         {
-            String newName;
-            // Удаляет из имени файла -kissvk.com
             String kissVK = "-kissvk.com";
+            String newName;
             if (filename.Contains(kissVK))
             {
                 newName = filename.Remove(filename.IndexOf(kissVK), kissVK.Length);
                 System.IO.File.Move(filename, newName);
-                filename = newName;
+                return newName;
             }
-            // редактирует " - "
+            return filename;
+        }
+        // редактирует " - "
+        private string correctHyphen(string filename)
+        {
+            String newName;
             if (filename.Contains("-") && !filename.Contains(" - "))
             {
                 {
@@ -371,6 +381,7 @@ namespace Mp3RenamerV2
             }
             return filename;
         }
+
         /// <summary>
         /// Очищает infoField
         /// </summary>
