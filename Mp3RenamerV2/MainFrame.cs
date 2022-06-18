@@ -11,8 +11,11 @@ namespace Mp3RenamerV2
         const int COLOR_RED = 0;
         const int COLOR_BLUE = 1;
         const int COLOR_GREEN = 2;
+        /// <summary>
+        /// Открытый файл или папка
+        /// </summary>
         string path;                                 // открытый файл или папка
-        List<String> pathFiles = new List<String>(); // список музыкальных файлов папки
+        List<String> files = new List<String>(); // список музыкальных файлов папки
         bool isSelectedFile = true;                  // файл или папка
         /// <summary>
         /// Список закрашенных слов
@@ -51,9 +54,16 @@ namespace Mp3RenamerV2
             openBW.RunWorkerCompleted += runCompletedBW;
             checkTagsBW.RunWorkerCompleted += runCompletedBW;
             checkFilenameBW.RunWorkerCompleted += runCompletedBW;
-            openBW.DoWork += openFolderTask;
+            openBW.DoWork += openExplorerElementBW;
             checkTagsBW.DoWork += checkTagsTask;
             checkFilenameBW.DoWork += checkFileNameTask;
+        }
+        /// <summary>
+        /// Отображает прогресс фоновой задачи
+        /// </summary>
+        private void progressChangedBW(object sender, ProgressChangedEventArgs e)
+        {
+            progressLabel.Text = (e.ProgressPercentage.ToString() + "%");
         }
         /// <summary>
         /// Событие завершения фоновой задачи
@@ -78,46 +88,48 @@ namespace Mp3RenamerV2
             rslt += "}";
             return rslt;
         }
-        // Событие Открыть файл
+        // Событие 'Открыть файл'
         private void openFileMenuItem_Click(object sender, EventArgs e)
         {
-            text = "";
             if (openFileDialog.ShowDialog() != DialogResult.OK) return;
-            checkStatusLabel.Text = "";
-            checkTagsMenuItem.Enabled = true;
-            checkNameMenuItem.Enabled = true;
-
             isSelectedFile = true;
             path = openFileDialog.FileName;
-            print(path + "\n");        // печать названия файла
-            String tagsName = showTags(path);
-            printAndAddWordForPainting(tagsName, tagsName.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, false);
-            paintWords();                 // покраска тегов
-            updateStartPath(path.Substring(0, path.Length - openFileDialog.SafeFileName.Length));   
+            openBW.RunWorkerAsync();  
         }
-        // Событие Открыть папку
+        // Событие 'Открыть папку'
         private void openFolderMenuItem_Click(object sender, EventArgs e)
         {
             if (openFolderDialog.ShowDialog() != DialogResult.OK) return;
-            checkStatusLabel.Text = "Выполнение";
-            checkTagsMenuItem.Enabled = true;
-            checkNameMenuItem.Enabled = true;
-
             isSelectedFile = false;
             path = openFolderDialog.SelectedPath;
             print("    Открыта папка: " + path + "\n");
-            pathFiles.Clear();
             openBW.RunWorkerAsync();
         }
         // Открыть папку. Считывает все названия папок и файлов в text
-        private void openFolderTask(object sender, DoWorkEventArgs e)
+        private void openExplorerElementBW(object sender, DoWorkEventArgs e)
         {
+            checkStatusLabel.Invoke(new Action(() => { 
+                checkStatusLabel.Text = "";
+                checkTagsMenuItem.Enabled = true;
+                checkNameMenuItem.Enabled = true;
+            }));
+            files.Clear();
             text = "";
-            String[] folderFileElements = Directory.GetFileSystemEntries(path);// элементы папки
+
+            String[]? folderFileElements = null;
+            if (Path.GetExtension(path) == "")
+            {
+                folderFileElements = Directory.GetFileSystemEntries(path);
+            }
+            else
+            {
+                folderFileElements = new string[1];
+                folderFileElements[0] = path;
+            }
             int progressLength = folderFileElements.Length;
             int progress = 0;
             // Считывает папки и музыкальные файлы
-            string ext, str;
+            string ext, tagsName;
             foreach (String elem in folderFileElements)
             {
                 ext = Path.GetExtension(elem);
@@ -125,10 +137,10 @@ namespace Mp3RenamerV2
                     text += elem + "\n";
                 else if (ext==".mp3" || ext==".flac")
                 {
-                    pathFiles.Add(elem);
+                    files.Add(elem);
                     text += elem + "\n";
-                    str = showTags(elem);
-                    printAndAddWordForPainting(str, str.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, true);
+                    tagsName = showTags(elem);
+                    printAndAddWordForPainting(tagsName, tagsName.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, true);
                     text += "\n";
                 }
                 openBW.ReportProgress(++progress * 100 / progressLength);
@@ -175,15 +187,15 @@ namespace Mp3RenamerV2
         // Фоновая задача проверки тегов
         private void checkTagsTask(object sender, DoWorkEventArgs e)
         {
-            for (int i = 0; i < pathFiles.Count; i++)
+            for (int i = 0; i < files.Count; i++)
             {
-                pathFiles[i] = deleteKissVK(pathFiles[i]);
-                pathFiles[i] = correctHyphen(pathFiles[i]);
-                checkTags(pathFiles[i]);
-                text += showTags(pathFiles[i]);
+                files[i] = deleteKissVK(files[i]);
+                files[i] = correctHyphen(files[i]);
+                checkTags(files[i]);
+                text += showTags(files[i]);
                 printAndAddWordForPainting("   правильные теги", COLOR_GREEN, true);
                 text += "\n";
-                checkTagsBW.ReportProgress((i+1)*100/ pathFiles.Count);
+                checkTagsBW.ReportProgress((i+1)*100/ files.Count);
             }
         }
         /// <summary>
@@ -262,35 +274,35 @@ namespace Mp3RenamerV2
         {
             text = "";
             string newname;
-            for (int i = 0; i < pathFiles.Count; i++)
+            for (int i = 0; i < files.Count; i++)
             {
-                newname = checkFileName(pathFiles[i], (bool)e.Argument);
+                newname = checkFileName(files[i], (bool)e.Argument);
                 if (newname.Contains("NULLTAGS"))
                 {
-                    text += pathFiles[i];
+                    text += files[i];
                     printAndAddWordForPainting("   пустые теги\n", COLOR_RED, true);
                 }
                 else if (newname.Equals("IOException"))
                 {
-                    text += pathFiles[i];
+                    text += files[i];
                     printAndAddWordForPainting("   файл занят другим процессом\n", COLOR_RED, true);
                 }
                 else if (newname.Equals("DirectoryNotFoundException"))
                 {
-                    text += pathFiles[i];
+                    text += files[i];
                     printAndAddWordForPainting("   DirectoryNotFoundException\n", COLOR_RED, true);
                 }
-                else if (!pathFiles[i].Equals(newname))
+                else if (!files[i].Equals(newname))
                 {
-                    pathFiles[i] = newname;
-                    text += pathFiles[i] + "\n";
+                    files[i] = newname;
+                    text += files[i] + "\n";
                 }
                 else
                 {
-                    text += pathFiles[i];
+                    text += files[i];
                     printAndAddWordForPainting("   название соответствует тегам\n", COLOR_GREEN, true);
                 }
-                checkFilenameBW.ReportProgress((i+1) * 100 / pathFiles.Count);
+                checkFilenameBW.ReportProgress((i+1) * 100 / files.Count);
             }
         }
         /// <summary>
@@ -339,14 +351,7 @@ namespace Mp3RenamerV2
             }
             return filename;
         }
-        /// <summary>
-        /// Отображает прогресс фоновой задачи
-        /// </summary>
-        private void progressChangedBW(object sender, ProgressChangedEventArgs e)
-        {
-            progressLabel.Text = (e.ProgressPercentage.ToString() + "%");
-            
-        }
+
         /// <summary>
         /// Обновляет точку открытия openFileDialog
         /// </summary>
