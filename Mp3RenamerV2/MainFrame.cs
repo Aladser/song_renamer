@@ -133,9 +133,9 @@ namespace Mp3RenamerV2
             files.Clear();
             textBuffer = "";
 
-            String path = (String)e.Argument;
-            String pathExt = Path.GetExtension(path);
-            String[]? folderFileElements;
+            string path = (String)e.Argument;
+            string pathExt = Path.GetExtension(path);
+            string[]? folderFileElements;
             if (pathExt == "")
             {
                 folderFileElements = Directory.GetFileSystemEntries(path);
@@ -219,26 +219,32 @@ namespace Mp3RenamerV2
                     }
                 }
                 // Проверяет название песни, вырезает из названия файла при отстутствии
-                TagLib.File tags = TagLib.File.Create(files[i]);
-                if (tags.Tag.Title == null)
+                try
                 {
-                    start = files[i].LastIndexOf("-") + 2; // начало выреза
-                    length = files[i].Length - start - 4; // число символов для выреза, 4 - длина расширения
-                    tags.Tag.Title = files[i].Substring(start, length);
-                    tags.Save();
+                    TagLib.File tags = TagLib.File.Create(files[i]);
+                    if (tags.Tag.Title == null)
+                    {
+                        start = files[i].LastIndexOf("-") + 2; // начало выреза
+                        length = files[i].Length - start - 4; // число символов для выреза, 4 - длина расширения
+                        tags.Tag.Title = files[i].Substring(start, length);
+                        tags.Save();
+                    }
+                    // Проверяет исполнителя, вырезает из короткого названия файла
+                    if (tags.Tag.FirstPerformer == null)
+                    {
+                        name = Path.GetFileName(files[i]);
+                        tags.Tag.Performers = new String[1] { name.Substring(0, name.LastIndexOf("-") - 1) };
+                        tags.Save();
+                    }
+                    textBuffer += showTags(files[i]);
+                    printAndAddWordForPainting("   правильные теги", COLOR_GREEN, true);
+                    textBuffer += "\n";
+                    checkTagsBW.ReportProgress((i + 1) * 100 / files.Count);
                 }
-                // Проверяет исполнителя, вырезает из короткого названия файла
-                if (tags.Tag.FirstPerformer == null)
+                catch (System.IO.FileNotFoundException)
                 {
-                    name = Path.GetFileName(files[i]);
-                    tags.Tag.Performers = new String[1] { name.Substring(0, name.LastIndexOf("-") - 1) };
-                    tags.Save();
+                    printAndAddWordForPainting(files[i] + ": не могу найти файл\n", COLOR_RED, true);
                 }
-
-                textBuffer += showTags(files[i]);
-                printAndAddWordForPainting("   правильные теги", COLOR_GREEN, true);
-                textBuffer += "\n";
-                checkTagsBW.ReportProgress((i+1)*100/ files.Count);
             }
         }
         
@@ -275,25 +281,33 @@ namespace Mp3RenamerV2
             for (int i = 0; i < files.Count; i++)
             {
                 newFilename = files[i].Substring(0, files[i].Length - Path.GetFileName(files[i]).Length); // копируется корень пути
-                TagLib.File tags = TagLib.File.Create(files[i]);
-                // Проверяется наличие тегов
-                if(tags.Tag.Performers == null || tags.Tag.Title == null)
+                try
                 {
-                    textBuffer += files[i];
-                    printAndAddWordForPainting("   пустые теги\n", COLOR_RED, true);
-                    return;
+                    TagLib.File tags = TagLib.File.Create(files[i]);
+                    // Проверяется наличие тегов
+                    if (tags.Tag.Performers == null || tags.Tag.Title == null)
+                    {
+                        textBuffer += files[i];
+                        printAndAddWordForPainting("   пустые теги\n", COLOR_RED, true);
+                        return;
+                    }
+                    // Записывается номер трека для файла из альбома
+                    if (isAlbum)
+                    {
+                        if (tags.Tag.Track < 10)
+                            newFilename += "0" + tags.Tag.Track + ". ";
+                        else
+                            newFilename += tags.Tag.Track + ". ";
+                    }
+                    // Дописывается в имя файла Исполнитель, Название, Формат
+                    newFilename += tags.Tag.Performers[0] + " - " + tags.Tag.Title;
+                    newFilename += Path.GetExtension(files[i]) == ".mp3" ? ".mp3" : ".flac";
                 }
-                // Записывается номер трека для файла из альбома
-                if (isAlbum)
+                catch (System.IO.FileNotFoundException)
                 {
-                    if (tags.Tag.Track < 10) 
-                        newFilename += "0" + tags.Tag.Track + ". ";
-                    else 
-                        newFilename += tags.Tag.Track + ". ";
+                    printAndAddWordForPainting(files[i] + ": не могу найти файл\n", COLOR_RED, true);
+                    continue;
                 }
-                // Дописывается в имя файла Исполнитель, Название, Формат
-                newFilename += tags.Tag.Performers[0] + " - " + tags.Tag.Title;
-                newFilename += Path.GetExtension(files[i]) == ".mp3" ? ".mp3" : ".flac";
                 // Переименование
                 if (!files[i].Equals(newFilename))
                 {
