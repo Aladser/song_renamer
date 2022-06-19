@@ -10,17 +10,9 @@ namespace Mp3RenamerV2
     {
         const int COLOR_RED = 0;
         const int COLOR_BLUE = 1;
-        const int COLOR_GREEN = 2;
+        const int COLOR_GREEN = 2;                         
         /// <summary>
-        /// Открытый файл или папка
-        /// </summary>
-        string path;
-        /// <summary>
-        /// Расширение открытого элемента
-        /// </summary>
-        String pathExt;                           
-        /// <summary>
-        /// список музыкальных файлов
+        /// список открытых музыкальных файлов
         /// </summary>
         List<String> files = new List<String>();
         /// <summary>
@@ -121,16 +113,14 @@ namespace Mp3RenamerV2
         private void openFileMenuItem_Click(object sender, EventArgs e)
         {
             if (openFileDialog.ShowDialog() != DialogResult.OK) return;
-            path = openFileDialog.FileName;
-            openBW.RunWorkerAsync();  
+            openBW.RunWorkerAsync(openFileDialog.FileName);  
         }
         // Событие 'Открыть папку'
         private void openFolderMenuItem_Click(object sender, EventArgs e)
         {
             if (openFolderDialog.ShowDialog() != DialogResult.OK) return;
-            path = openFolderDialog.SelectedPath;
-            print("    Открыта папка: " + path + "\n");
-            openBW.RunWorkerAsync();
+            print("    Открыта папка: " + openFolderDialog.SelectedPath + "\n");
+            openBW.RunWorkerAsync(openFolderDialog.SelectedPath);
         }
         // Фоновая задача открытия папки или файла
         private void openExplorerElementTask(object sender, DoWorkEventArgs e)
@@ -143,8 +133,9 @@ namespace Mp3RenamerV2
             files.Clear();
             textBuffer = "";
 
-            String[]? folderFileElements = null;
-            pathExt = Path.GetExtension(path);
+            String path = (String)e.Argument;
+            String pathExt = Path.GetExtension(path);
+            String[]? folderFileElements;
             if (pathExt == "")
             {
                 folderFileElements = Directory.GetFileSystemEntries(path);
@@ -184,8 +175,13 @@ namespace Mp3RenamerV2
         // Событие 'Проверка тегов'
         private void checkTagsMenuItem_Click(object sender, EventArgs e)
         {
-            if(pathExt == "")
-                infoField.Text += "    Проверка тегов файлов\n";
+            if (files.Count > 1)
+                print("    Проверка тегов файлов\n");
+            else if (files.Count == 0)
+            {
+                print("    Нет файлов\n");
+                return;
+            }
             checkStatusLabel.Text = "Выполнение";
             checkTagsBW.RunWorkerAsync();
         }
@@ -215,7 +211,11 @@ namespace Mp3RenamerV2
                             files[i] = name;
                         }
                         else
-                            printAndAddWordForPainting(name+" уже существует", COLOR_RED, true);
+                        {
+                            print("Текущее имя: " + files[i] + "\n");
+                            printAndAddWordForPainting(name + " уже существует\n", COLOR_RED, true);
+                            return;
+                        }
                     }
                 }
                 // Проверяет название песни, вырезает из названия файла при отстутствии
@@ -245,18 +245,23 @@ namespace Mp3RenamerV2
         // Событие 'Проверка имени файла'
         private void checkFileNameMenuItem_Click(object sender, EventArgs e)
         {
-            checkFileName_Click(path, false);
+            checkFileName_Click(false);
         }
         // Событие 'Проверка имени файла альбома'
         private void checkAlbFileNameMenuItem_Click(object sender, EventArgs e)
         {
-            checkFileName_Click(path, true);
+            checkFileName_Click(true);
         }
         // Общее событие 'Проверка имени файла'
-        private void checkFileName_Click(String path, bool isAlbum)
+        private void checkFileName_Click(bool isAlbum)
         {
-            if(pathExt == "")
-                infoField.Text += "    Проверка соответствия имен файлов тегам\n";
+            if (files.Count > 1)
+                print("    Проверка соответствия имен файлов тегам\n");
+            else if (files.Count == 0)
+            {
+                print("    Нет файлов\n");
+                return;
+            }
             checkStatusLabel.Text = "Выполнение";
             checkFilenameBW.RunWorkerAsync(isAlbum);
         }
