@@ -16,9 +16,6 @@ C:\Projects\SongRenamer2\SongRenamer2\obj\Debug\SongRenamer2.pdb
 C:\Projects\SongRenamer\SongRenamer2\bin\Debug\SongRenamer2.exe.config
 C:\Projects\SongRenamer\SongRenamer2\bin\Debug\SongRenamer2.exe
 C:\Projects\SongRenamer\SongRenamer2\bin\Debug\SongRenamer2.pdb
-C:\Projects\SongRenamer\SongRenamer2\bin\Debug\TagLibSharp.dll
-C:\Projects\SongRenamer\SongRenamer2\bin\Debug\TagLibSharp.pdb
-C:\Projects\SongRenamer\SongRenamer2\bin\Debug\TagLibSharp.xml
 C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer2.csproj.AssemblyReference.cache
 C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer2.csproj.SuggestedBindingRedirects.cache
 C:\Projects\SongRenamer\SongRenamer2\obj\Debug\Mp3RenamerV2.MainFrame.resources
