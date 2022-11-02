@@ -1,4 +1,5 @@
 .vs
+packages
 SongRenamer2/bin/Debug/*.config
 SongRenamer2/bin/Debug/*.pdb
 
