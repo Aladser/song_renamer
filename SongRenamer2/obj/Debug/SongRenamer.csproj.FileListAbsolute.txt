@@ -1,0 +1,12 @@
+C:\Projects\SongRenamer\SongRenamer2\bin\Debug\SongRenamer2.exe.config
+C:\Projects\SongRenamer\SongRenamer2\bin\Debug\SongRenamer2.exe
+C:\Projects\SongRenamer\SongRenamer2\bin\Debug\SongRenamer2.pdb
+C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer.csproj.AssemblyReference.cache
+C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer.csproj.SuggestedBindingRedirects.cache
+C:\Projects\SongRenamer\SongRenamer2\obj\Debug\Mp3RenamerV2.MainFrame.resources
+C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer2.Properties.Resources.resources
+C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer.csproj.GenerateResource.cache
+C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer.csproj.CoreCompileInputs.cache
+C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer.csproj.CopyComplete
+C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer2.exe
+C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer2.pdb
