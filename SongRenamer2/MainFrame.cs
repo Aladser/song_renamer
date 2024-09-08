@@ -257,6 +257,10 @@ namespace Mp3RenamerV2
                 {
                     printAndAddWordForPainting(files[i] + ": не могу найти файл\n", COLOR_RED, true);
                 }
+                catch(System.ArgumentOutOfRangeException)
+                {
+                    continue;
+                }
             }
         }
         
@@ -288,32 +292,38 @@ namespace Mp3RenamerV2
         {
             textBuffer = "";
             bool isAlbum = (bool)e.Argument;
-            string newFilename;
+            string newFilepath;
             int progress = 0;
+            bool isTags;
             for (int i = 0; i < files.Count; i++)
             {
-                newFilename = files[i].Substring(0, files[i].Length - Path.GetFileName(files[i]).Length); // копируется корень пути
+                isTags = false;
+                newFilepath = files[i].Substring(0, files[i].Length - Path.GetFileName(files[i]).Length); // копируется корень пути
                 try
                 {
                     TagLib.File tags = TagLib.File.Create(files[i]);
                     // Проверяется наличие тегов
-                    if (tags.Tag.Performers == null || tags.Tag.Title == null)
-                    {
-                        textBuffer += files[i];
-                        printAndAddWordForPainting("   пустые теги\n", COLOR_RED, true);
-                        continue;
+                    if (tags.Tag.Performers == null || tags.Tag.Title == null) {
+                        // очистка названия файла
+
+                        string newFilename = Path.GetFileName(files[i]).Replace("-kissvk.com", "");
+                        newFilepath += newFilename;
+                    } else {
+                        // создание имени файла из тегов
+
+                        isTags = true;
+                        // Записывается номер трека для файла из альбома
+                        if (isAlbum)
+                        {
+                            if (tags.Tag.Track < 10)
+                                newFilepath += "0" + tags.Tag.Track + ". ";
+                            else
+                                newFilepath += tags.Tag.Track + ". ";
+                        }
+                        // Дописывается в имя файла Исполнитель, Название, Формат
+                        newFilepath += tags.Tag.Performers[0] + " - " + tags.Tag.Title;
+                        newFilepath += Path.GetExtension(files[i]) == ".mp3" ? ".mp3" : ".flac";
                     }
-                    // Записывается номер трека для файла из альбома
-                    if (isAlbum)
-                    {
-                        if (tags.Tag.Track < 10)
-                            newFilename += "0" + tags.Tag.Track + ". ";
-                        else
-                            newFilename += tags.Tag.Track + ". ";
-                    }
-                    // Дописывается в имя файла Исполнитель, Название, Формат
-                    newFilename += tags.Tag.Performers[0] + " - " + tags.Tag.Title;
-                    newFilename += Path.GetExtension(files[i]) == ".mp3" ? ".mp3" : ".flac";
                 }
                 catch (System.IO.FileNotFoundException)
                 {
@@ -326,13 +336,17 @@ namespace Mp3RenamerV2
                     continue;
                 }
                 // Переименование
-                if (!files[i].Equals(newFilename))
+                if (!files[i].Equals(newFilepath))
                 {
                     try
                     {
-                        System.IO.File.Move(files[i], newFilename);
-                        files[i] = newFilename;
+                        System.IO.File.Move(files[i], newFilepath);
+                        files[i] = newFilepath;
                         textBuffer += files[i] + "\n";
+                        if (!isTags)
+                        {
+                            printAndAddWordForPainting("Пустые теги\n", COLOR_RED, true);
+                        }
                     } 
                     catch (DirectoryNotFoundException) {
                         textBuffer += files[i];
@@ -357,7 +371,11 @@ namespace Mp3RenamerV2
                 else
                 {
                     textBuffer += files[i];
-                    printAndAddWordForPainting("   название соответствует тегам\n", COLOR_GREEN, true);
+                    if (!isTags) {
+                        printAndAddWordForPainting("  -  пустые теги\n", COLOR_GREEN, true);
+                    } else {
+                        printAndAddWordForPainting("   -   название соответствует тегам\n", COLOR_GREEN, true);
+                    }
                 }
                 checkFilenameBW.ReportProgress(++progress * 100 / files.Count);
             }
