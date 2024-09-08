@@ -10,3 +10,14 @@ C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer.csproj.CoreCompileInp
 C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer.csproj.CopyComplete
 C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer2.exe
 C:\Projects\SongRenamer\SongRenamer2\obj\Debug\SongRenamer2.pdb
+D:\Code\song_renamer\SongRenamer2\bin\Debug\SongRenamer2.exe.config
+D:\Code\song_renamer\SongRenamer2\bin\Debug\SongRenamer2.exe
+D:\Code\song_renamer\SongRenamer2\bin\Debug\SongRenamer2.pdb
+D:\Code\song_renamer\SongRenamer2\obj\Debug\SongRenamer.csproj.AssemblyReference.cache
+D:\Code\song_renamer\SongRenamer2\obj\Debug\Mp3RenamerV2.MainFrame.resources
+D:\Code\song_renamer\SongRenamer2\obj\Debug\SongRenamer2.Properties.Resources.resources
+D:\Code\song_renamer\SongRenamer2\obj\Debug\SongRenamer.csproj.GenerateResource.cache
+D:\Code\song_renamer\SongRenamer2\obj\Debug\SongRenamer.csproj.CoreCompileInputs.cache
+D:\Code\song_renamer\SongRenamer2\obj\Debug\SongRena.0C97461A.Up2Date
+D:\Code\song_renamer\SongRenamer2\obj\Debug\SongRenamer2.exe
+D:\Code\song_renamer\SongRenamer2\obj\Debug\SongRenamer2.pdb

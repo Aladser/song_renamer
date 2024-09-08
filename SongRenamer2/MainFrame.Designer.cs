@@ -195,7 +195,7 @@ namespace Mp3RenamerV2
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainFrame";
-            this.Text = "SongRenamer 1.51";
+            this.Text = "SongRenamer 1.52";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
