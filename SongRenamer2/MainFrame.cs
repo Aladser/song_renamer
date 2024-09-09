@@ -171,7 +171,7 @@ namespace Mp3RenamerV2
                     files.Add(elem);
                     textBuffer += elem + "\n";
                     tagsName = showTags(elem);
-                    printAndAddWordForPainting(tagsName, tagsName.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, true);
+                    PrintMessage(tagsName, tagsName.Contains("Пусто") ? COLOR_RED : COLOR_BLUE, true);
                     textBuffer += "\n";
                 }
                 openBW.ReportProgress(++progress * 100 / progressLength);
@@ -205,31 +205,33 @@ namespace Mp3RenamerV2
             string name;
             for (int i = 0; i < files.Count; i++)
             {
-                // удаление -kissvk.com из названия
-                if (files[i].Contains("-kissvk.com"))
-                {
-                    name = files[i].Remove(files[i].IndexOf("-kissvk.com"), 11);
-                    System.IO.File.Move(files[i], name);
-                    files[i] = name;
-                }
                 // замена '-' на ' - '
                 if (files[i].Contains("-") && !files[i].Contains(" - "))
                 {
                     {
                         name = files[i].Replace("-", " - ");
-                        if (!System.IO.File.Exists(name))
+                        if (!File.Exists(name))
                         {
-                            System.IO.File.Move(files[i], name);
-                            files[i] = name;
+                            try
+                            {
+                                File.Move(files[i], name);
+                                files[i] = name;
+                            } catch(IOException)
+                            {
+                                PrintMessage($"{name}: ошибка переименования: файл занят другим процессом", COLOR_RED, true);
+                                continue;
+                            }
+
                         }
                         else
                         {
-                            print("Текущее имя: " + files[i] + "\n");
-                            printAndAddWordForPainting(name + " уже существует\n", COLOR_RED, true);
+                            print($"Текущее имя: {files[i]}\n");
+                            PrintMessage($"{name} уже существует\n", COLOR_RED, true);
                             return;
                         }
                     }
                 }
+
                 // Проверяет название песни, вырезает из названия файла при отстутствии
                 try
                 {
@@ -249,17 +251,15 @@ namespace Mp3RenamerV2
                         tags.Save();
                     }
                     textBuffer += showTags(files[i]);
-                    printAndAddWordForPainting("   правильные теги", COLOR_GREEN, true);
+                    PrintMessage("   правильные теги", COLOR_GREEN, true);
                     textBuffer += "\n";
                     checkTagsBW.ReportProgress((i + 1) * 100 / files.Count);
-                }
-                catch (System.IO.FileNotFoundException)
-                {
-                    printAndAddWordForPainting(files[i] + ": не могу найти файл\n", COLOR_RED, true);
-                }
-                catch(System.ArgumentOutOfRangeException)
-                {
+                } catch (System.IO.FileNotFoundException) {
+                    PrintMessage(files[i] + ": не могу найти файл\n", COLOR_RED, true);
+                } catch(System.ArgumentOutOfRangeException) {
                     continue;
+                } catch (TagLib.CorruptFileException) {
+                    PrintMessage(files[i] + ": не найден заголовок тегов\n", COLOR_RED, true);
                 }
             }
         }
@@ -327,12 +327,12 @@ namespace Mp3RenamerV2
                 }
                 catch (System.IO.FileNotFoundException)
                 {
-                    printAndAddWordForPainting(files[i] + ": не могу найти файл\n", COLOR_RED, true);
+                    PrintMessage(files[i] + ": не могу найти файл\n", COLOR_RED, true);
                     continue;
                 }
                 catch(TagLib.CorruptFileException)
                 {
-                    printAndAddWordForPainting(files[i] + ": нет заголовка тегов в файле\n", COLOR_RED, true);
+                    PrintMessage(files[i] + ": нет заголовка тегов в файле\n", COLOR_RED, true);
                     continue;
                 }
                 // Переименование
@@ -345,36 +345,36 @@ namespace Mp3RenamerV2
                         textBuffer += files[i] + "\n";
                         if (!isTags)
                         {
-                            printAndAddWordForPainting("Пустые теги\n", COLOR_RED, true);
+                            PrintMessage("Пустые теги\n", COLOR_RED, true);
                         }
                     } 
                     catch (DirectoryNotFoundException) {
                         textBuffer += files[i];
-                        printAndAddWordForPainting("  Папка не найдена\n", COLOR_RED, true);
+                        PrintMessage("  Папка не найдена\n", COLOR_RED, true);
                     } 
                     catch (IOException) 
                     {
                         textBuffer += files[i];
-                        printAndAddWordForPainting("   Файл открыт в другой программе\n", COLOR_RED, true);
+                        PrintMessage("   Файл открыт в другой программе\n", COLOR_RED, true);
                     } 
                     catch(NotSupportedException)
                     {
                         textBuffer += files[i];
-                        printAndAddWordForPainting("  Ошибка переименования файла\n", COLOR_RED, true);
+                        PrintMessage("  Ошибка переименования файла\n", COLOR_RED, true);
                     }
                     catch (System.ArgumentException) 
                     {
                         textBuffer += files[i];
-                        printAndAddWordForPainting("  Недопустимые знаки в имени файла\n", COLOR_RED, true);
+                        PrintMessage("  Недопустимые знаки в имени файла\n", COLOR_RED, true);
                     }
                 }
                 else
                 {
                     textBuffer += files[i];
                     if (!isTags) {
-                        printAndAddWordForPainting("  -  пустые теги\n", COLOR_GREEN, true);
+                        PrintMessage("  -  пустые теги\n", COLOR_GREEN, true);
                     } else {
-                        printAndAddWordForPainting("   -   название соответствует тегам\n", COLOR_GREEN, true);
+                        PrintMessage("   -   название соответствует тегам\n", COLOR_GREEN, true);
                     }
                 }
                 checkFilenameBW.ReportProgress(++progress * 100 / files.Count);
@@ -422,11 +422,11 @@ namespace Mp3RenamerV2
             infoField.SelectionLength = 0;
         }
         /// <summary>
-        /// Добавляет слово для рисования
+        /// Выводит текст в окне приложения
         /// </summary>
         /// <param name="word"> слово </param>
         /// <param name="isBuffer"> true - если слово для буфера </param>
-        private void printAndAddWordForPainting(string word, int color, bool isBuffer)
+        private void PrintMessage(string word, int color, bool isBuffer)
         {
             int start=0;
             infoField.Invoke(new Action(() => { start = infoField.TextLength + textBuffer.Length; })); // Старт строки
